@@ -1,5 +1,7 @@
+
 #include <iostream>
 #include <sys/socket.h>
+#include <sys/time.h>
 #include <arpa/inet.h>
 #include <unistd.h>
 #include <cstring>
@@ -81,7 +83,7 @@ int main(int argc, char *argv[]) {
     unsigned int interval = timeUs() - before;
     // Close socket
     close(sock);
-    std::cout << "Connection closed" << interval <<std::endl;
+    std::cout << "Connection close and Duration is " << interval << "us" << std::endl;
 
     return 0;
 }
