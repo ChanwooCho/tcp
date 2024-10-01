@@ -8,6 +8,12 @@
 #define DATA_SIZE 20480  // 20KB
 #define ITERATIONS 160
 
+unsigned long timeUs() {
+    struct timeval te; 
+    gettimeofday(&te, NULL);
+    return te.tv_sec * 1000000LL + te.tv_usec;
+}
+
 int main(int argc, char *argv[]) {
     if (argc != 2) {
         std::cerr << "Usage: client <ip address:port>" << std::endl;
@@ -56,6 +62,7 @@ int main(int argc, char *argv[]) {
 
     std::cout << "Connected to server at " << ip_address << ":" << port << std::endl;
 
+    unsigned int before = timeUs();
     for (int i = 0; i < ITERATIONS; ++i) {
         // Send 20KB data to server
         if (send(sock, data, DATA_SIZE, 0) < 0) {
@@ -74,7 +81,7 @@ int main(int argc, char *argv[]) {
 
     // Close socket
     close(sock);
-    std::cout << "Connection closed" << std::endl;
+    std::cout << "Connection closed" << timeUS() - before <<std::endl;
 
     return 0;
 }
