@@ -78,10 +78,10 @@ int main(int argc, char *argv[]) {
         }
         std::cout << "Received 20KB from server: Iteration " << i + 1 << std::endl;
     }
-
+    unsigned int interval = timeUs() - before;
     // Close socket
     close(sock);
-    std::cout << "Connection closed" << timeUs() - before <<std::endl;
+    std::cout << "Connection closed" << interval <<std::endl;
 
     return 0;
 }
