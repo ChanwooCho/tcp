@@ -81,7 +81,7 @@ int main(int argc, char *argv[]) {
 
     // Close socket
     close(sock);
-    std::cout << "Connection closed" << timeUS() - before <<std::endl;
+    std::cout << "Connection closed" << timeUs() - before <<std::endl;
 
     return 0;
 }
