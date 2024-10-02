@@ -117,17 +117,19 @@ int main(int argc, char* argv[]) {
     before = timeUs();
     // Main loop to handle reading and writing for all clients
     for (int e = 0; e < 50; ++e) { // Iterate multiple times as per the original logic
-        for (int i = 0; i < iterations; ++i) {
-            // After reading from all clients, send data back to all clients
-            for (int client_socket : client_sockets) {
-                send(client_socket, data, data_size, 0);
-            }
+        // for (int i = 0; i < iterations; ++i) {
+        send(client_socket, data, data_size, 0);
+        read(client_socket, buffer, data_size);
+        //     // After reading from all clients, send data back to all clients
+        //     for (int client_socket : client_sockets) {
+        //         send(client_socket, data, data_size, 0);
+        //     }
 
-            // Read from all connected clients
-            for (int client_socket : client_sockets) {
-                read(client_socket, buffer, data_size);
-            }
-        }
+        //     // Read from all connected clients
+        //     for (int client_socket : client_sockets) {
+        //         read(client_socket, buffer, data_size);
+        //     }
+        // }
     }
 
     interval = timeUs() - before;
