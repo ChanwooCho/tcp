@@ -114,9 +114,9 @@ int main(int argc, char* argv[]) {
     unsigned int before;
     unsigned int interval;
 
-    before = timeUs();
     // Main loop to handle reading and writing for all clients
     for (int e = 0; e < 50; ++e) { // Iterate multiple times as per the original logic
+        before = timeUs();
         for (int i = 0; i < iterations; ++i) {
             // After reading from all clients, send data back to all clients
             for (int client_socket : client_sockets) {
