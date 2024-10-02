@@ -78,7 +78,7 @@ int main(int argc, char* argv[]) {
     std::cout << "Connection established with client." << std::endl;
 
     // Run the specified number of iterations
-    for (int e = 0; e < 10; ++e) {
+    for (int e = 0; e < 50; ++e) {
         for (int i = 0; i < iterations; ++i) {
             // Receive data from client
             read(new_socket, buffer, data_size);
