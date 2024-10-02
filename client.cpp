@@ -7,7 +7,7 @@
 #include <cstdlib>  // for atoi
 
 #define DATA_SIZE 20480  // 20KB
-#define ITERATIONS 160
+#define ITERATIONS 80
 
 unsigned long timeUs() {
     struct timeval te; 
