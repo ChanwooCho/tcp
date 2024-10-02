@@ -7,6 +7,7 @@
 #include <vector>
 #include <algorithm> // For std::max
 #include <sys/time.h>
+#include <thread>
 
 unsigned long timeUs() {
     struct timeval te; 
