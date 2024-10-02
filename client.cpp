@@ -6,9 +6,6 @@
 #include <cstring>
 #include <cstdlib>  // for atoi
 
-#define DATA_SIZE 20480  // 20KB
-#define ITERATIONS 80
-
 unsigned long timeUs() {
     struct timeval te; 
     gettimeofday(&te, NULL);
@@ -16,13 +13,17 @@ unsigned long timeUs() {
 }
 
 int main(int argc, char *argv[]) {
-    if (argc != 2) {
-        std::cerr << "Usage: client <ip address:port>" << std::endl;
+    if (argc != 4) {
+        std::cerr << "Usage: client <data_size(KB)> <# of decoders> <ip_address:port>" << std::endl;
         return -1;
     }
 
-    // Split the input argument into IP address and port
-    std::string input(argv[1]);
+    // Parse data_size and iterations
+    int data_size = std::atoi(argv[1]) * 1024; // Bytes
+    int iterations = std::atoi(argv[2]) * 2; // attention layer + feedforward layer
+
+    // Split the IP address and port
+    std::string input(argv[3]);
     std::size_t colon_pos = input.find(':');
     if (colon_pos == std::string::npos) {
         std::cerr << "Invalid argument format. Use: <ip address:port>" << std::endl;
@@ -34,15 +35,17 @@ int main(int argc, char *argv[]) {
 
     int sock = 0;
     struct sockaddr_in serv_addr;
-    char buffer[DATA_SIZE] = {0};
-    char data[DATA_SIZE] = {0};
+    char *buffer = new char[data_size];
+    char *data = new char[data_size];
 
     // Fill the data buffer with some data
-    memset(data, 'A', DATA_SIZE);
+    memset(data, 'A', data_size);
 
     // Create socket
     if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
         std::cerr << "Socket creation error" << std::endl;
+        delete[] buffer;
+        delete[] data;
         return -1;
     }
 
@@ -52,12 +55,16 @@ int main(int argc, char *argv[]) {
     // Convert IPv4 and IPv6 addresses from text to binary form
     if (inet_pton(AF_INET, ip_address.c_str(), &serv_addr.sin_addr) <= 0) {
         std::cerr << "Invalid address/ Address not supported" << std::endl;
+        delete[] buffer;
+        delete[] data;
         return -1;
     }
 
     // Connect to server
     if (connect(sock, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0) {
         std::cerr << "Connection Failed" << std::endl;
+        delete[] buffer;
+        delete[] data;
         return -1;
     }
 
@@ -68,18 +75,23 @@ int main(int argc, char *argv[]) {
 
     before = timeUs();
     for (int e = 0; e < 10; ++e) {
-        for (int i = 0; i < ITERATIONS; ++i) {
-            // Send 20KB data to server
-            send(sock, data, DATA_SIZE, 0);
+        for (int i = 0; i < iterations; ++i) {
+            // Send data_size KB data to server
+            send(sock, data, data_size, 0);
     
-            // Receive 20KB data from server
-            read(sock, buffer, DATA_SIZE);
+            // Receive data_size KB data from server
+            read(sock, buffer, data_size);
         }
     }
     interval = timeUs() - before;
     printf("Averaged Time = %d ms\n", interval / 1000 / 10);
-    sleep(3);
+
     // Close socket
     close(sock);
+    
+    // Free dynamically allocated memory
+    delete[] buffer;
+    delete[] data;
+
     return 0;
 }
