@@ -100,16 +100,10 @@ int main(int argc, char* argv[]) {
     // Now start the loop to send and receive 20KB 160 times
     for (int i = 0; i < ITERATIONS; ++i) {
         // Receive 20KB data from client
-        if (read(new_socket, buffer, DATA_SIZE) < 0) {
-            std::cerr << "Read failed" << std::endl;
-            break;
-        }
+        read(new_socket, buffer, DATA_SIZE);
 
         // Send 20KB data back to client
-        if (send(new_socket, data, DATA_SIZE, 0) < 0) {
-            std::cerr << "Send failed" << std::endl;
-            break;
-        }
+        send(new_socket, data, DATA_SIZE, 0);
     }
 
     // Close sockets
