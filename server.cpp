@@ -129,7 +129,7 @@ int main(int argc, char* argv[]) {
             }
         }
         interval = timeUs() - before;
-        printf("iteration %d'sAveraged Time = %d ms\n", e, interval / 1000 / e);
+        printf("iteration %d'sAveraged Time = %d ms\n", e, interval / 1000);
     }
 
     
