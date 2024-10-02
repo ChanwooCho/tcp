@@ -130,8 +130,9 @@ int main(int argc, char* argv[]) {
             }
         }
         interval = timeUs() - before;
-        sum_interval += interval;
-        printf("iteration %d'sAveraged Time = %d ms\n", e, sum_interval / 1000 / e);
+        if e > 10:
+            sum_interval += interval;
+            printf("iteration %d'sAveraged Time = %d ms\n", e, sum_interval / 1000 / e - 10);
     }
 
     
