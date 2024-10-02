@@ -65,16 +65,16 @@ int main(int argc, char* argv[]) {
 
     std::cout << "Connection established with client." << std::endl;
     
-    for (int e = 0; e < 10; ++e){
-        for (int i = 0; i < ITERATIONS; ++i) {
 
-            // Receive 20KB data from client
-            read(new_socket, buffer, DATA_SIZE);
+    for (int i = 0; i < ITERATIONS; ++i) {
 
-            // Send 20KB data back to client
-            send(new_socket, data, DATA_SIZE, 0);
-        }
+        // Receive 20KB data from client
+        read(new_socket, buffer, DATA_SIZE);
+
+        // Send 20KB data back to client
+        send(new_socket, data, DATA_SIZE, 0);
     }
+    
     // Close sockets
     close(new_socket);
     close(server_fd);
