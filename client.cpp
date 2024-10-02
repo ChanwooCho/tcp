@@ -77,7 +77,7 @@ int main(int argc, char *argv[]) {
         }
     }
     interval = timeUs() - before;
-    std::cout << "Averaged Duration is " << interval / 10 / 1000 << "ms" << std::endl;
+    printf("Averaged Time = %d ms", interval / 1000 / 10);
     sleep(3);
     // Close socket
     close(sock);
