@@ -6,7 +6,7 @@
 #include <cstdlib>  // For atoi()
 
 #define DATA_SIZE 20480  // 20KB
-#define ITERATIONS 160
+#define ITERATIONS 80
 
 int main(int argc, char* argv[]) {
     if (argc != 2) {
