@@ -113,7 +113,8 @@ int main(int argc, char* argv[]) {
 
     unsigned int before;
     unsigned int interval;
-
+    unsigned int sum_interval = 0
+    ;
     // Main loop to handle reading and writing for all clients
     for (int e = 0; e < 50; ++e) { // Iterate multiple times as per the original logic
         before = timeUs();
@@ -129,7 +130,8 @@ int main(int argc, char* argv[]) {
             }
         }
         interval = timeUs() - before;
-        printf("iteration %d'sAveraged Time = %d ms\n", e, interval / 1000);
+        sum_interval += interval;
+        printf("iteration %d'sAveraged Time = %d ms\n", e, sum_interval / 1000 / e);
     }
 
     
