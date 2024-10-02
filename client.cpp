@@ -74,7 +74,7 @@ int main(int argc, char *argv[]) {
     unsigned int interval;
 
     before = timeUs();
-    for (int e = 0; e < 10; ++e) {
+    for (int e = 0; e < 50; ++e) {
         for (int i = 0; i < iterations; ++i) {
             // Send data_size KB data to server
             send(sock, data, data_size, 0);
@@ -85,7 +85,7 @@ int main(int argc, char *argv[]) {
     }
     interval = timeUs() - before;
     sleep(2);
-    printf("Averaged Time = %d ms\n", interval / 1000 / 10);
+    printf("Averaged Time = %d ms\n", interval / 1000 / 50);
     // Close socket
     close(sock);
     
