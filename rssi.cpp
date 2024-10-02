@@ -1,42 +1,58 @@
 #include <iostream>
 #include <cstdio>
-#include <memory>
-#include <stdexcept>
 #include <string>
-#include <array>
-#include <json/json.h>  // If you use a JSON parser like jsoncpp
+#include <sstream>
+#include <vector>
 
-std::string exec(const char* cmd) {
-    std::array<char, 128> buffer;
-    std::string result;
-    std::unique_ptr<FILE, decltype(&pclose)> pipe(popen(cmd, "r"), pclose);
-    if (!pipe) {
-        throw std::runtime_error("popen() failed!");
+// Function to execute a command and return the output
+std::string execCommand(const char* cmd) {
+    char buffer[128];
+    std::string result = "";
+    FILE* pipe = popen(cmd, "r");
+    if (!pipe) throw std::runtime_error("popen() failed!");
+    try {
+        while (fgets(buffer, sizeof buffer, pipe) != NULL) {
+            result += buffer;
+        }
+    } catch (...) {
+        pclose(pipe);
+        throw;
     }
-    while (fgets(buffer.data(), buffer.size(), pipe.get()) != nullptr) {
-        result += buffer.data();
-    }
+    pclose(pipe);
     return result;
 }
 
+// Function to parse RSSI from termux-wifi-scaninfo output
+int getRSSI() {
+    std::string output = execCommand("termux-wifi-scaninfo");
+    std::istringstream ss(output);
+    std::string line;
+    int rssi = -1; // Default invalid RSSI value
+
+    while (std::getline(ss, line)) {
+        // Check if the line contains "level" (RSSI information)
+        size_t pos = line.find("\"level\":");
+        if (pos != std::string::npos) {
+            // Extract the RSSI value after "level":
+            std::string rssiStr = line.substr(pos + 8);
+            rssi = std::stoi(rssiStr);
+            break;
+        }
+    }
+
+    return rssi;
+}
+
 int main() {
-    // Call the termux-wifi-connectioninfo command
-    std::string wifiInfoJson = exec("termux-wifi-connectioninfo");
-
-    // Print the JSON output
-    std::cout << "Wi-Fi Info JSON: " << wifiInfoJson << std::endl;
-
-    // Parse the JSON to extract the RSSI value
-    Json::Value jsonData;
-    Json::CharReaderBuilder builder;
-    std::string errs;
-    
-    std::istringstream s(wifiInfoJson);
-    if (Json::parseFromStream(builder, s, &jsonData, &errs)) {
-        int rssi = jsonData["rssi"].asInt();
-        std::cout << "RSSI: " << rssi << " dBm" << std::endl;
-    } else {
-        std::cerr << "Failed to parse JSON: " << errs << std::endl;
+    try {
+        int rssi = getRSSI();
+        if (rssi != -1) {
+            std::cout << "RSSI: " << rssi << " dBm" << std::endl;
+        } else {
+            std::cout << "Unable to retrieve RSSI" << std::endl;
+        }
+    } catch (const std::exception& e) {
+        std::cerr << "Error: " << e.what() << std::endl;
     }
 
     return 0;
