@@ -75,43 +75,24 @@ int main(int argc, char *argv[]) {
     size_t total_received = 0;
     size_t bytes_received;
     std::cout << "Receiving 200MB of data from the server..." << std::endl;
-
+    
+    unsigned int before = timeUs();
     while (total_received < INITIAL_DATA_SIZE) {
         bytes_received = read(sock, buffer, DATA_SIZE);  // Read in chunks of 20KB
-        if (bytes_received < 0) {
-            std::cerr << "Read failed during 200MB reception" << std::endl;
-            delete[] large_buffer;
-            close(sock);
-            return -1;
-        }
-        if (bytes_received == 0) {
-            std::cerr << "Connection closed by server during 200MB reception" << std::endl;
-            delete[] large_buffer;
-            close(sock);
-            return -1;
-        }
-
-        // Copy received data into the large_buffer
-        memcpy(large_buffer + total_received, buffer, bytes_received);
         total_received += bytes_received;
-
-        std::cout << "Received " << total_received << "/" << INITIAL_DATA_SIZE << " bytes" << std::endl;
     }
-    std::cout << "Completed receiving 200MB of data from the server." << std::endl;
-
+    unsigned int interval = timeUs() - before;
+    std::cout << "200MB Bit Rate is " << 200 / interval * 1000 * 1000 << "MB/s" << std::endl;
+    
     // Step 2: Now start the 160 iterations of sending and receiving 20KB
     unsigned int before = timeUs();
     for (int i = 0; i < ITERATIONS; ++i) {
         // Send 20KB data to server
-        if (send(sock, data, DATA_SIZE, 0) < 0) {
-            std::cerr << "Send failed" << std::endl;
-            break;
-        }
+        send(sock, data, DATA_SIZE, 0);
+
         // Receive 20KB data from server
-        if (read(sock, buffer, DATA_SIZE) < 0) {
-            std::cerr << "Read failed" << std::endl;
-            break;
-        }
+        read(sock, buffer, DATA_SIZE) < 0)
+
     }
     unsigned int interval = timeUs() - before;
 
