@@ -66,17 +66,19 @@ int main(int argc, char *argv[]) {
     unsigned int before;
     unsigned int interval;
 
-    before = timeUs();
-    for (int i = 0; i < ITERATIONS; ++i) {
-        // Send 20KB data to server
-        send(sock, data, DATA_SIZE, 0);
-
-        // Receive 20KB data from server
-        read(sock, buffer, DATA_SIZE);
-    }
-    interval = timeUs() - before;
-    std::cout << "Connection close and Duration is " << interval << "us" << std::endl;
     
+    for (int e = 0; e < 10; ++e) {
+        before = timeUs();
+        for (int i = 0; i < ITERATIONS; ++i) {
+            // Send 20KB data to server
+            send(sock, data, DATA_SIZE, 0);
+    
+            // Receive 20KB data from server
+            read(sock, buffer, DATA_SIZE);
+        }
+        interval = timeUs() - before;
+        std::cout << "Connection close and Duration is " << interval << "us" << std::endl;
+    }
     // Close socket
     close(sock);
     return 0;
