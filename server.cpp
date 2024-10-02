@@ -71,14 +71,11 @@ int main(int argc, char* argv[]) {
             std::cerr << "Read failed" << std::endl;
             break;
         }
-        std::cout << "Received 20KB from client: Iteration " << i + 1 << std::endl;
-
         // Send 20KB data back to client
         if (send(new_socket, data, DATA_SIZE, 0) < 0) {
             std::cerr << "Send failed" << std::endl;
             break;
         }
-        std::cout << "Sent 20KB back to client: Iteration " << i + 1 << std::endl;
     }
 
     // Close sockets
