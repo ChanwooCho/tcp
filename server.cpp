@@ -3,9 +3,10 @@
 #include <netinet/in.h>
 #include <unistd.h>
 #include <cstring>
-#include <cstdlib>  // For atoi()
+#include <cstdlib>  // For atoi() and malloc
 
 #define DATA_SIZE 20480  // 20KB
+#define LARGE_DATA_SIZE 209715200  // 200MB
 #define ITERATIONS 160
 
 int main(int argc, char* argv[]) {
@@ -23,9 +24,20 @@ int main(int argc, char* argv[]) {
     char buffer[DATA_SIZE] = {0};
     char data[DATA_SIZE] = {0};
 
+    // Allocate 200MB dynamically on the heap
+    char* large_data = new(std::nothrow) char[LARGE_DATA_SIZE];
+    if (large_data == nullptr) {
+        std::cerr << "Failed to allocate memory for 200MB data" << std::endl;
+        return -1;
+    }
+
+    // Fill the large_data buffer with dummy data (you can customize it if needed)
+    memset(large_data, 'A', LARGE_DATA_SIZE);
+
     // Create socket file descriptor
     if ((server_fd = socket(AF_INET, SOCK_STREAM, 0)) == 0) {
         std::cerr << "Socket failed" << std::endl;
+        delete[] large_data;  // Free allocated memory
         return -1;
     }
 
@@ -33,6 +45,7 @@ int main(int argc, char* argv[]) {
     if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt))) {
         std::cerr << "setsockopt failed" << std::endl;
         close(server_fd);
+        delete[] large_data;  // Free allocated memory
         return -1;
     }
     
@@ -44,6 +57,7 @@ int main(int argc, char* argv[]) {
     if (bind(server_fd, (struct sockaddr *)&address, sizeof(address)) < 0) {
         std::cerr << "Bind failed" << std::endl;
         close(server_fd);
+        delete[] large_data;  // Free allocated memory
         return -1;
     }
 
@@ -51,6 +65,7 @@ int main(int argc, char* argv[]) {
     if (listen(server_fd, 3) < 0) {
         std::cerr << "Listen failed" << std::endl;
         close(server_fd);
+        delete[] large_data;  // Free allocated memory
         return -1;
     }
 
@@ -60,28 +75,52 @@ int main(int argc, char* argv[]) {
     if ((new_socket = accept(server_fd, (struct sockaddr *)&address, (socklen_t*)&addrlen)) < 0) {
         std::cerr << "Accept failed" << std::endl;
         close(server_fd);
+        delete[] large_data;  // Free allocated memory
         return -1;
     }
 
     std::cout << "Connection established with client." << std::endl;
 
+    // Send 200MB of data before starting the loop
+    std::cout << "Sending 200MB of data to client..." << std::endl;
+    ssize_t bytes_sent = 0;
+    ssize_t total_sent = 0;
+    while (total_sent < LARGE_DATA_SIZE) {
+        bytes_sent = send(new_socket, large_data + total_sent, LARGE_DATA_SIZE - total_sent, 0);
+        if (bytes_sent < 0) {
+            std::cerr << "Failed to send 200MB data" << std::endl;
+            break;
+        }
+        total_sent += bytes_sent;
+    }
+    if (total_sent == LARGE_DATA_SIZE) {
+        std::cout << "Successfully sent 200MB of data to client." << std::endl;
+    }
+
+    // Now start the loop to send and receive 20KB 160 times
     for (int i = 0; i < ITERATIONS; ++i) {
         // Receive 20KB data from client
         if (read(new_socket, buffer, DATA_SIZE) < 0) {
             std::cerr << "Read failed" << std::endl;
             break;
         }
+        std::cout << "Received 20KB from client: Iteration " << i + 1 << std::endl;
+
         // Send 20KB data back to client
         if (send(new_socket, data, DATA_SIZE, 0) < 0) {
             std::cerr << "Send failed" << std::endl;
             break;
         }
+        std::cout << "Sent 20KB back to client: Iteration " << i + 1 << std::endl;
     }
 
     // Close sockets
     close(new_socket);
     close(server_fd);
     std::cout << "Connection closed" << std::endl;
+
+    // Free allocated memory for large_data
+    delete[] large_data;
 
     return 0;
 }
