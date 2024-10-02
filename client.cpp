@@ -71,14 +71,11 @@ int main(int argc, char *argv[]) {
             std::cerr << "Send failed" << std::endl;
             break;
         }
-        std::cout << "Sent 20KB to server: Iteration " << i + 1 << std::endl;
-
         // Receive 20KB data from server
         if (read(sock, buffer, DATA_SIZE) < 0) {
             std::cerr << "Read failed" << std::endl;
             break;
         }
-        std::cout << "Received 20KB from server: Iteration " << i + 1 << std::endl;
     }
     unsigned int interval = timeUs() - before;
     // Close socket
