@@ -128,11 +128,12 @@ int main(int argc, char* argv[]) {
                 read(client_socket, buffer, data_size);
             }
         }
+        printf("Averaged Time = %d ms\n", interval / 1000 / e);
     }
 
     interval = timeUs() - before;
     sleep(1);
-    printf("Averaged Time = %d ms\n", interval / 1000 / 50);
+   
     sleep(1);
 
     // Clean up resources
