@@ -84,8 +84,8 @@ int main(int argc, char *argv[]) {
         }
     }
     interval = timeUs() - before;
+    sleep(2);
     printf("Averaged Time = %d ms\n", interval / 1000 / 10);
-
     // Close socket
     close(sock);
     
