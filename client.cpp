@@ -1,4 +1,3 @@
-
 #include <iostream>
 #include <sys/socket.h>
 #include <sys/time.h>
@@ -9,6 +8,7 @@
 
 #define DATA_SIZE 20480  // 20KB
 #define ITERATIONS 160
+#define INITIAL_DATA_SIZE (200 * 1024 * 1024)  // 200MB
 
 unsigned long timeUs() {
     struct timeval te; 
@@ -64,6 +64,42 @@ int main(int argc, char *argv[]) {
 
     std::cout << "Connected to server at " << ip_address << ":" << port << std::endl;
 
+    // Step 1: Allocate a dynamic buffer to receive 200MB of data
+    char *large_buffer = new(std::nothrow) char[INITIAL_DATA_SIZE];  // Allocate 200MB
+    if (large_buffer == nullptr) {
+        std::cerr << "Memory allocation failed" << std::endl;
+        close(sock);
+        return -1;
+    }
+
+    size_t total_received = 0;
+    size_t bytes_received;
+    std::cout << "Receiving 200MB of data from the server..." << std::endl;
+
+    while (total_received < INITIAL_DATA_SIZE) {
+        bytes_received = read(sock, buffer, DATA_SIZE);  // Read in chunks of 20KB
+        if (bytes_received < 0) {
+            std::cerr << "Read failed during 200MB reception" << std::endl;
+            delete[] large_buffer;
+            close(sock);
+            return -1;
+        }
+        if (bytes_received == 0) {
+            std::cerr << "Connection closed by server during 200MB reception" << std::endl;
+            delete[] large_buffer;
+            close(sock);
+            return -1;
+        }
+
+        // Copy received data into the large_buffer
+        memcpy(large_buffer + total_received, buffer, bytes_received);
+        total_received += bytes_received;
+
+        std::cout << "Received " << total_received << "/" << INITIAL_DATA_SIZE << " bytes" << std::endl;
+    }
+    std::cout << "Completed receiving 200MB of data from the server." << std::endl;
+
+    // Step 2: Now start the 160 iterations of sending and receiving 20KB
     unsigned int before = timeUs();
     for (int i = 0; i < ITERATIONS; ++i) {
         // Send 20KB data to server
@@ -78,9 +114,11 @@ int main(int argc, char *argv[]) {
         }
     }
     unsigned int interval = timeUs() - before;
-    // Close socket
+
+    // Clean up and close socket
+    delete[] large_buffer;  // Free the allocated memory
     close(sock);
-    std::cout << "Connection close and Duration is " << interval << "us" << std::endl;
+    std::cout << "Connection closed and duration is " << interval << "us" << std::endl;
 
     return 0;
 }
