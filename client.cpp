@@ -1,16 +1,9 @@
 #include <iostream>
 #include <sys/socket.h>
-#include <sys/time.h>
 #include <arpa/inet.h>
 #include <unistd.h>
 #include <cstring>
 #include <cstdlib>  // for atoi
-
-unsigned long timeUs() {
-    struct timeval te; 
-    gettimeofday(&te, NULL);
-    return te.tv_sec * 1000000LL + te.tv_usec;
-}
 
 int main(int argc, char *argv[]) {
     if (argc != 4) {
@@ -70,23 +63,17 @@ int main(int argc, char *argv[]) {
 
     std::cout << "Connected to server at " << ip_address << ":" << port << std::endl;
     
-    unsigned int before;
-    unsigned int interval;
 
-    before = timeUs();
     for (int e = 0; e < 50; ++e) {
         for (int i = 0; i < iterations; ++i) {
-            // Send data_size KB data to server
-            send(sock, data, data_size, 0);
-    
             // Receive data_size KB data from server
             read(sock, buffer, data_size);
+            
+            // Send data_size KB data to server
+            send(sock, data, data_size, 0);
         }
     }
-    interval = timeUs() - before;
-    sleep(1);
-    printf("Averaged Time = %d ms\n", interval / 1000 / 50);
-    sleep(1);
+
     // Close socket
     close(sock);
     
