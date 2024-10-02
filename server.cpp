@@ -116,69 +116,26 @@ int main(int argc, char* argv[]) {
     unsigned int interval;
     unsigned int sum_interval = 0
     ;
-    // // Main loop to handle reading and writing for all clients
-    // for (int e = 0; e < 50; ++e) { // Iterate multiple times as per the original logic
-    //     before = timeUs();
-    //     for (int i = 0; i < iterations; ++i) {
-    //         // After reading from all clients, send data back to all clients
-    //         for (int client_socket : client_sockets) {
-    //             send(client_socket, data, data_size, 0);
-    //         }
-
-    //         // Read from all connected clients
-    //         for (int client_socket : client_sockets) {
-    //             read(client_socket, buffer, data_size);
-    //         }
-    //     }
-    //     interval = timeUs() - before;
-    //     if (e > 10) {
-    //         sum_interval += interval;
-    //         printf("iteration %d'sAveraged Time = %d ms\n", e, sum_interval / 1000 / (e - 10));
-    //     }
-    // }
-// Main loop to handle reading and writing for all clients
-    
+    // Main loop to handle reading and writing for all clients
     for (int e = 0; e < 50; ++e) { // Iterate multiple times as per the original logic
         before = timeUs();
-    
         for (int i = 0; i < iterations; ++i) {
-            // Send data to all clients simultaneously using threads
-            std::vector<std::thread> send_threads;
+            // After reading from all clients, send data back to all clients
             for (int client_socket : client_sockets) {
-                send_threads.emplace_back([client_socket, data, data_size]() {
-                    send(client_socket, data, data_size, 0);
-                });
+                send(client_socket, data, data_size, 0);
             }
-    
-            // Wait for all send operations to complete
-            for (auto& thread : send_threads) {
-                thread.join();
-            }
-    
-            // Read from all connected clients simultaneously using threads
-            std::vector<std::thread> read_threads;
+
+            // Read from all connected clients
             for (int client_socket : client_sockets) {
-                read_threads.emplace_back([client_socket, buffer, data_size]() {
-                    read(client_socket, buffer, data_size);
-                });
-            }
-    
-            // Wait for all read operations to complete
-            for (auto& thread : read_threads) {
-                thread.join();
+                read(client_socket, buffer, data_size);
             }
         }
-    
         interval = timeUs() - before;
         if (e > 10) {
             sum_interval += interval;
-            printf("Iteration %d's Averaged Time = %d ms\n", e, sum_interval / 1000 / (e - 10));
+            printf("iteration %d'sAveraged Time = %d ms\n", e, sum_interval / 1000 / (e - 10));
         }
     }
-    
-    sleep(1);
-   
-    sleep(1);
 
     // Clean up resources
     for (int client_socket : client_sockets) {
