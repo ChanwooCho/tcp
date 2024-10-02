@@ -82,19 +82,19 @@ int main(int argc, char *argv[]) {
         total_received += bytes_received;
     }
     unsigned int interval = timeUs() - before;
-    std::cout << "200MB Bit Rate is " << 200 / interval * 1000 * 1000 << "MB/s" << std::endl;
+    std::cout << "200MB Bit Rate is " << 200 * 1000 * 1000 / interval << "MBytes/s" << std::endl;
     
     // Step 2: Now start the 160 iterations of sending and receiving 20KB
-    unsigned int before = timeUs();
+    before = timeUs();
     for (int i = 0; i < ITERATIONS; ++i) {
         // Send 20KB data to server
         send(sock, data, DATA_SIZE, 0);
 
         // Receive 20KB data from server
-        read(sock, buffer, DATA_SIZE) < 0)
+        read(sock, buffer, DATA_SIZE);
 
     }
-    unsigned int interval = timeUs() - before;
+    interval = timeUs() - before;
 
     // Clean up and close socket
     delete[] large_buffer;  // Free the allocated memory
