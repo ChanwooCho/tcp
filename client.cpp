@@ -124,20 +124,12 @@ int main(int argc, char *argv[]) {
 
     for (int e = 0; e < 50; ++e) {
         for (int i = 0; i < iterations; ++i) {
+            // Recieve data_size bytes to server
             ssize_t bytes_received = read_all(sock, buffer, data_size, e, i);
-            if (bytes_received != data_size) {
-                std::cerr << "Failed to receive full data_size bytes" << std::endl;
-                // Handle error (e.g., retry, exit, etc.)
-                break;
-            }
+
             
             // Send data_size bytes to server
             ssize_t bytes_sent = send_all(sock, data, data_size, e, i);
-            if (bytes_sent != data_size) {
-                std::cerr << "Failed to send full data_size bytes" << std::endl;
-                // Handle error
-                break;
-            }
         }
     }
 
