@@ -17,8 +17,6 @@ unsigned long timeUs() {
 
 ssize_t read_all(int sock, char* buffer, size_t size) {
     size_t total_read = 0;
-
-    before = timeUs();
     while (total_read < size) {
         ssize_t bytes_read = read(sock, buffer + total_read, size - total_read);
         
