@@ -159,9 +159,9 @@ int main(int argc, char* argv[]) {
 
             // Read from all connected clients
             for (int client_socket : client_sockets) {
-                ssize_t bytes_received = read(client_socket, buffer, data_size);
+                // ssize_t bytes_received = read(client_socket, buffer, data_size);
                 // printf("bytes_received = %d\n", bytes_received);
-                // read_all(client_socket, buffer, data_size);
+                read_all(client_socket, buffer, data_size);
             }
         }
         interval = timeUs() - before;
