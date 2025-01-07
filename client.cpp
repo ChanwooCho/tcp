@@ -84,7 +84,7 @@ int main(int argc, char *argv[]) {
     int bytesRead;
     int cnt;
     unsigned int before;
-
+    unsigned int interval;
     for (int e = 0; e < 50; ++e) {
         for (int i = 0; i < iterations; ++i) {
             totalBytesToRead = data_size;
@@ -94,7 +94,8 @@ int main(int argc, char *argv[]) {
             before = timeUs();
             while (bytesRead < totalBytesToRead) {
                 ssize_t ret = read(sock, buffer + bytesRead, totalBytesToRead - bytesRead);
-                printf("sliced_data = %d, time = %dms\n", ret, (timeUs() - before) / 1000); 
+                interval = timeUs() - before;
+                printf("sliced_data = %d, time = %dms\n", ret, interval / 1000); 
                 before = timeUs();
                 if (ret <= 0) {
                     // Handle error or EOF
