@@ -151,25 +151,29 @@ int main(int argc, char* argv[]) {
     std::cout << "Minimum " << num_clients << " clients connected. Starting main loop." << std::endl;
 
     unsigned int before;
+    unsigned int before2;
     unsigned int interval;
-    unsigned int sum_interval = 0
-    ;
+    unsigned int interval2;
+    unsigned int sum_interval = 0;
     // Main loop to handle reading and writing for all clients
     for (int e = 0; e < 50; ++e) { // Iterate multiple times as per the original logic
         before = timeUs();
         for (int i = 0; i < iterations; ++i) {
             // After reading from all clients, send data back to all clients
             for (int client_socket : client_sockets) {
-                size_t bytes_sent = send(client_socket, data, data_size, 0);
-                // send_all(client_socket, data, data_size);
-                printf("bytes_sent = %d\n", bytes_sent);
+                before2 = timeUs();
+                size_t bytes_send = send(client_socket, data, data_size, 0);
+                interval2 = timeUs() - before2;
+                printf("iteration %d decoder %d: bytes_send = %d, interval_send = %dus\n", e, i, bytes_send, interval2);
             }
 
             // Read from all connected clients
+
             for (int client_socket : client_sockets) {
-                size_t bytes_received = read(client_socket, buffer, data_size);
-                // read_all(client_socket, buffer, data_size);
-                printf("bytes_received = %d\n", bytes_received);
+                before2 = timeUs();
+                size_t bytes_read = read(client_socket, buffer, data_size);
+                interval2 = timeUs() - before2;
+                printf("iteration %d decoder %d: bytes_read = %d, interval_read = %dus\n", e, i, bytes_read, interval2);
             }
         }
         interval = timeUs() - before;
