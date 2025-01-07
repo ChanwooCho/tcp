@@ -151,12 +151,14 @@ int main(int argc, char* argv[]) {
         for (int i = 0; i < iterations; ++i) {
             // After reading from all clients, send data back to all clients
             for (int client_socket : client_sockets) {
-                send_all(client_socket, data, data_size);
+                send(client_socket, data, data_size);
+                // send_all(client_socket, data, data_size);
             }
 
             // Read from all connected clients
             for (int client_socket : client_sockets) {
-                read_all(client_socket, buffer, data_size);
+                read(client_socket, buffer, data_size);
+                // read_all(client_socket, buffer, data_size);
             }
         }
         interval = timeUs() - before;
