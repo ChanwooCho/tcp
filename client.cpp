@@ -19,11 +19,11 @@ ssize_t read_all(int sock, char* buffer, size_t size, int e, int d) {
     before = timeUs();
     while (total_read < size) {
         ssize_t bytes_read = read(sock, buffer + total_read, size - total_read);
-        if (e >= 40) {
-            interval = timeUs() - before;
-            printf("iteration %d decoder %d: bytes_read = %d, interval = %dus\n", e, d, bytes_read, interval);
-            before = timeUs();
-        }
+
+        interval = timeUs() - before;
+        printf("iteration %d decoder %d: bytes_read = %d, interval = %dus\n", e, d, bytes_read, interval);
+        before = timeUs();
+        
         if (bytes_read < 0) {
             perror("Read error");
             return -1;
@@ -40,16 +40,13 @@ ssize_t send_all(int sock, const char* data, size_t size, int e, int d) {
     size_t total_sent = 0;
     while (total_sent < size) {
         ssize_t bytes_sent = send(sock, data + total_sent, size - total_sent, 0);
-        if (e >= 40)
-            printf("iteration %d decoder %d: bytes_sent = %d\n", e, d, bytes_sent); 
         if (bytes_sent < 0) {
             perror("Send error");
             return -1;
         }
         total_sent += bytes_sent;
     }
-    if (e >= 45)
-        printf("==============================================================\n");
+    printf("==============================================================\n");
     return total_sent;
 }
 
