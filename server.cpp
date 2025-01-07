@@ -159,18 +159,17 @@ int main(int argc, char* argv[]) {
         before = timeUs();
         for (int i = 0; i < iterations; ++i) {
             // After reading from all clients, send data back to all clients
-            send_all(client_socket, data, data_size);
-            // for (int client_socket : client_sockets) {
-            //     // size_t bytes_sent = send(client_socket, data, data_size, 0);
-            //     send_all(client_socket, data, data_size);
-            // }
+            for (int client_socket : client_sockets) {
+                size_t bytes_sent = send(client_socket, data, data_size, 0);
+                // send_all(client_socket, data, data_size);
+            }
 
             read_all(client_socket, buffer, data_size);
             // Read from all connected clients
-            // for (int client_socket : client_sockets) {
-            //     // size_t bytes_received = read(client_socket, buffer, data_size);
-            //     read_all(client_socket, buffer, data_size);
-            // }
+            for (int client_socket : client_sockets) {
+                size_t bytes_received = read(client_socket, buffer, data_size);
+                // read_all(client_socket, buffer, data_size);
+            }
         }
         interval = timeUs() - before;
         if (e > 10) {
