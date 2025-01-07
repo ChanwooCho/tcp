@@ -64,10 +64,33 @@ int main(int argc, char *argv[]) {
     std::cout << "Connected to server at " << ip_address << ":" << port << std::endl;
     
 
+    // for (int e = 0; e < 50; ++e) {
+    //     for (int i = 0; i < iterations; ++i) {
+    //         // Receive data_size KB data from server
+    //         read(sock, buffer, data_size);
+            
+    //         // Send data_size KB data to server
+    //         send(sock, data, data_size, 0);
+    //     }
+    // }
+
+    int totalBytesToRead;
+    int bytesRead;
     for (int e = 0; e < 50; ++e) {
         for (int i = 0; i < iterations; ++i) {
+            totalBytesToRead = data_size;
+            bytesRead = 0;
             // Receive data_size KB data from server
-            read(sock, buffer, data_size);
+            while (bytesRead < totalBytesToRead) {
+                ssize_t ret = read(sock, buffer + bytesRead, totalBytesToRead - bytesRead);
+                if (ret <= 0) {
+                    printf("Final bytesRead = %d\n", bytesRead);
+                    // Handle error or EOF
+                    break;
+                }
+                printf("bytesRead = %d\n", bytesRead);
+                bytesRead += ret;
+            }
             
             // Send data_size KB data to server
             send(sock, data, data_size, 0);
