@@ -32,7 +32,7 @@ ssize_t read_all(int sock, char* buffer, size_t size, int e) {
         }
         total_read += bytes_read;
     }
-    print("===============================\n");
+    printf("===============================\n");
     return total_read;
 }
 
