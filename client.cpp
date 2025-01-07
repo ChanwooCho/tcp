@@ -74,11 +74,11 @@ int main(int argc, char *argv[]) {
         for (int i = 0; i < iterations; ++i) {
             // Receive data_size KB data from server
             ssize_t read_size = read(sock, buffer, data_size);
-            printf("read = %d\n", read_size); 
+            // printf("read = %d\n", read_size); 
             
             // Send data_size KB data to server
             ssize_t send_size = send(sock, data, data_size, 0);
-            printf("send = %d\n", send_size);
+            // printf("send = %d\n", send_size);
         }
     }
 
