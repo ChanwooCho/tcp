@@ -15,44 +15,36 @@ unsigned long timeUs() {
     return te.tv_sec * 1000000LL + te.tv_usec;
 }
 
-ssize_t send_all(int sock, const char* data, size_t size) {
-    size_t total_sent = 0;
-    while (total_sent < size) {
-        ssize_t bytes_sent = send(sock, data + total_sent, size - total_sent, 0);
-        if (bytes_sent < 0) {
-            if (errno == EINTR) {
-                continue; // Interrupted by signal, retry
-            }
-            perror("Send error");
-            return -1;
-        }
-        if (bytes_sent == 0) {
-            // Connection closed
-            break;
-        }
-        total_sent += bytes_sent;
-    }
-    return total_sent;
-}
-
 ssize_t read_all(int sock, char* buffer, size_t size) {
     size_t total_read = 0;
+
+    before = timeUs();
     while (total_read < size) {
         ssize_t bytes_read = read(sock, buffer + total_read, size - total_read);
+        
         if (bytes_read < 0) {
-            if (errno == EINTR) {
-                continue; // Interrupted by signal, retry
-            }
             perror("Read error");
             return -1;
-        }
-        if (bytes_read == 0) {
+        } else if (bytes_read == 0) {
             // Connection closed
             break;
         }
         total_read += bytes_read;
     }
     return total_read;
+}
+
+ssize_t send_all(int sock, const char* data, size_t size) {
+    size_t total_sent = 0;
+    while (total_sent < size) {
+        ssize_t bytes_sent = send(sock, data + total_sent, size - total_sent, 0);
+        if (bytes_sent < 0) {
+            perror("Send error");
+            return -1;
+        }
+        total_sent += bytes_sent;
+    }
+    return total_sent;
 }
 
 int main(int argc, char* argv[]) {
