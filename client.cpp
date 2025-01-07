@@ -85,6 +85,7 @@ int main(int argc, char *argv[]) {
             // Receive data_size KB data from server
             while (bytesRead < totalBytesToRead) {
                 ssize_t ret = read(sock, buffer + bytesRead, totalBytesToRead - bytesRead);
+                printf("sliced_data = %d\n", ret); 
                 if (ret <= 0) {
                     // Handle error or EOF
                     break;
@@ -92,7 +93,7 @@ int main(int argc, char *argv[]) {
                 cnt += 1;
                 bytesRead += ret;
             }
-            printf("cnt = %d, bytes = %d\n", cnt, bytesRead);
+            printf("=====cnt = %d, bytes = %d\n", cnt, bytesRead);
             // Send data_size KB data to server
             send(sock, data, data_size, 0);
         }
