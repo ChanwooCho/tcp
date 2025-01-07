@@ -165,7 +165,6 @@ int main(int argc, char* argv[]) {
                 printf("bytes_sent = %d\n", bytes_sent);
             }
 
-            read_all(client_socket, buffer, data_size);
             // Read from all connected clients
             for (int client_socket : client_sockets) {
                 size_t bytes_received = read(client_socket, buffer, data_size);
