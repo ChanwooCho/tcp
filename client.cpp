@@ -13,10 +13,16 @@ unsigned long timeUs() {
 
 ssize_t read_all(int sock, char* buffer, size_t size, int e) {
     size_t total_read = 0;
+    unsigned int before;
+    unsigned int interval;
+
+    before = timeUs();
     while (total_read < size) {
         ssize_t bytes_read = read(sock, buffer + total_read, size - total_read);
         if (e >= 45)
-            printf("iteration %d : bytes_read = %d\n", e, bytes_read); 
+            interval = timeUs() - before;
+            printf("iteration %d : bytes_read = %d, interval = %dus\n", e, bytes_read, interval);
+            before = timeUs();
         if (bytes_read < 0) {
             perror("Read error");
             return -1;
@@ -26,6 +32,7 @@ ssize_t read_all(int sock, char* buffer, size_t size, int e) {
         }
         total_read += bytes_read;
     }
+    print("===============================\n");
     return total_read;
 }
 
