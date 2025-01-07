@@ -5,6 +5,12 @@
 #include <cstring>
 #include <cstdlib>  // for atoi
 
+unsigned long timeUs() {
+    struct timeval te; 
+    gettimeofday(&te, NULL);
+    return te.tv_sec * 1000000LL + te.tv_usec;
+}
+
 int main(int argc, char *argv[]) {
     if (argc != 4) {
         std::cerr << "Usage: client <data_size(KB)> <# of decoders> <ip_address:port>" << std::endl;
@@ -83,9 +89,11 @@ int main(int argc, char *argv[]) {
             bytesRead = 0;
             cnt = 0;
             // Receive data_size KB data from server
+            before = timeUs();
             while (bytesRead < totalBytesToRead) {
                 ssize_t ret = read(sock, buffer + bytesRead, totalBytesToRead - bytesRead);
-                printf("sliced_data = %d\n", ret); 
+                printf("sliced_data = %d, time = %dms\n", ret, (timeUs() - before) / 1000); 
+                before = timeUs();
                 if (ret <= 0) {
                     // Handle error or EOF
                     break;
