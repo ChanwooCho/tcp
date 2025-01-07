@@ -11,10 +11,12 @@ unsigned long timeUs() {
     return te.tv_sec * 1000000LL + te.tv_usec;
 }
 
-ssize_t read_all(int sock, char* buffer, size_t size) {
+ssize_t read_all(int sock, char* buffer, size_t size, int e) {
     size_t total_read = 0;
     while (total_read < size) {
         ssize_t bytes_read = read(sock, buffer + total_read, size - total_read);
+        if (e >= 45)
+            printf("iteration %d : bytes_read = %d\n", e, bytes_read); 
         if (bytes_read < 0) {
             perror("Read error");
             return -1;
@@ -27,10 +29,12 @@ ssize_t read_all(int sock, char* buffer, size_t size) {
     return total_read;
 }
 
-ssize_t send_all(int sock, const char* data, size_t size) {
+ssize_t send_all(int sock, const char* data, size_t size, int e) {
     size_t total_sent = 0;
     while (total_sent < size) {
         ssize_t bytes_sent = send(sock, data + total_sent, size - total_sent, 0);
+        if (e >= 45)
+            printf("iteration %d : bytes_sent = %d\n", e, bytes_sent); 
         if (bytes_sent < 0) {
             perror("Send error");
             return -1;
