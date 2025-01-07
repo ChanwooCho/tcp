@@ -95,7 +95,7 @@ int main(int argc, char *argv[]) {
             while (bytesRead < totalBytesToRead) {
                 ssize_t ret = read(sock, buffer + bytesRead, totalBytesToRead - bytesRead);
                 interval = timeUs() - before;
-                printf("sliced_data = %d, time = %dms\n", ret, interval / 1000); 
+                printf("sliced_data = %d, time = %dus\n", ret, interval); 
                 before = timeUs();
                 if (ret <= 0) {
                     // Handle error or EOF
