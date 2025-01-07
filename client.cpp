@@ -33,8 +33,6 @@ ssize_t read_all(int sock, char* buffer, size_t size, int e, int d) {
         }
         total_read += bytes_read;
     }
-    if (e >= 45)
-        printf("==============================================================\n");
     return total_read;
 }
 
@@ -50,6 +48,8 @@ ssize_t send_all(int sock, const char* data, size_t size, int e, int d) {
         }
         total_sent += bytes_sent;
     }
+    if (e >= 45)
+        printf("==============================================================\n");
     return total_sent;
 }
 
