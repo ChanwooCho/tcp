@@ -11,7 +11,7 @@ unsigned long timeUs() {
     return te.tv_sec * 1000000LL + te.tv_usec;
 }
 
-ssize_t read_all(int sock, char* buffer, size_t size, int e) {
+ssize_t read_all(int sock, char* buffer, size_t size, int e, int d) {
     size_t total_read = 0;
     unsigned int before;
     unsigned int interval;
@@ -21,7 +21,7 @@ ssize_t read_all(int sock, char* buffer, size_t size, int e) {
         ssize_t bytes_read = read(sock, buffer + total_read, size - total_read);
         if (e >= 45) {
             interval = timeUs() - before;
-            printf("iteration %d : bytes_read = %d, interval = %dus\n", e, bytes_read, interval);
+            printf("iteration %d decoder %d: bytes_read = %d, interval = %dus\n", e, bytes_read, interval);
             before = timeUs();
         }
         if (bytes_read < 0) {
@@ -34,16 +34,16 @@ ssize_t read_all(int sock, char* buffer, size_t size, int e) {
         total_read += bytes_read;
     }
     if (e >= 45)
-        printf("===============================\n");
+        printf("==============================================================\n");
     return total_read;
 }
 
-ssize_t send_all(int sock, const char* data, size_t size, int e) {
+ssize_t send_all(int sock, const char* data, size_t size, int e, int d) {
     size_t total_sent = 0;
     while (total_sent < size) {
         ssize_t bytes_sent = send(sock, data + total_sent, size - total_sent, 0);
         if (e >= 45)
-            printf("iteration %d : bytes_sent = %d\n", e, bytes_sent); 
+            printf("iteration %d decoder %d: bytes_sent = %d\n", e, bytes_sent); 
         if (bytes_sent < 0) {
             perror("Send error");
             return -1;
@@ -127,7 +127,7 @@ int main(int argc, char *argv[]) {
 
     for (int e = 0; e < 50; ++e) {
         for (int i = 0; i < iterations; ++i) {
-            ssize_t bytes_received = read_all(sock, buffer, data_size, e);
+            ssize_t bytes_received = read_all(sock, buffer, data_size, e, i);
             if (bytes_received != data_size) {
                 std::cerr << "Failed to receive full data_size bytes" << std::endl;
                 // Handle error (e.g., retry, exit, etc.)
@@ -135,7 +135,7 @@ int main(int argc, char *argv[]) {
             }
             
             // Send data_size bytes to server
-            ssize_t bytes_sent = send_all(sock, data, data_size, e);
+            ssize_t bytes_sent = send_all(sock, data, data_size, e, i);
             if (bytes_sent != data_size) {
                 std::cerr << "Failed to send full data_size bytes" << std::endl;
                 // Handle error
