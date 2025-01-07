@@ -17,6 +17,10 @@ unsigned long timeUs() {
 
 ssize_t read_all(int sock, char* buffer, size_t size) {
     size_t total_read = 0;
+    unsigned int before;
+    unsigned int interval;
+
+    before = timeUs();
     while (total_read < size) {
         ssize_t bytes_read = read(sock, buffer + total_read, size - total_read);
         if (bytes_read < 0) {
@@ -41,7 +45,6 @@ ssize_t send_all(int sock, const char* data, size_t size) {
         }
         total_sent += bytes_sent;
     }
-    return total_sent;
 }
 
 int main(int argc, char* argv[]) {
@@ -151,16 +154,16 @@ int main(int argc, char* argv[]) {
         for (int i = 0; i < iterations; ++i) {
             // After reading from all clients, send data back to all clients
             for (int client_socket : client_sockets) {
-                ssize_t bytes_sent = send(client_socket, data, data_size, 0);
+                // ssize_t bytes_sent = send(client_socket, data, data_size, 0);
                 // printf("bytes_sent  = %d\n", bytes_sent);
-                // send_all(client_socket, data, data_size);
+                send_all(client_socket, data, data_size);
             }
 
             // Read from all connected clients
             for (int client_socket : client_sockets) {
-                ssize_t bytes_received = read(client_socket, buffer, data_size);
+                // ssize_t bytes_received = read(client_socket, buffer, data_size);
                 // printf("bytes_received = %d\n", bytes_received);
-                // read_all(client_socket, buffer, data_size);
+                read_all(client_socket, buffer, data_size);
             }
         }
         interval = timeUs() - before;
