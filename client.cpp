@@ -63,7 +63,7 @@ int main(int argc, char *argv[]) {
 
     std::cout << "Connected to server at " << ip_address << ":" << port << std::endl;
     
-
+    // 기존 코드
     // for (int e = 0; e < 50; ++e) {
     //     for (int i = 0; i < iterations; ++i) {
     //         // Receive data_size KB data from server
@@ -76,22 +76,23 @@ int main(int argc, char *argv[]) {
 
     int totalBytesToRead;
     int bytesRead;
+    int cnt;
     for (int e = 0; e < 50; ++e) {
         for (int i = 0; i < iterations; ++i) {
             totalBytesToRead = data_size;
             bytesRead = 0;
+            cnt = 0;
             // Receive data_size KB data from server
             while (bytesRead < totalBytesToRead) {
                 ssize_t ret = read(sock, buffer + bytesRead, totalBytesToRead - bytesRead);
                 if (ret <= 0) {
-                    printf("Final bytesRead = %d\n", bytesRead);
                     // Handle error or EOF
                     break;
                 }
-                printf("bytesRead = %d\n", bytesRead);
+                cnt += 1;
                 bytesRead += ret;
             }
-            
+            printf("cnt = %d, bytes = %d\n", cnt, bytesRead);
             // Send data_size KB data to server
             send(sock, data, data_size, 0);
         }
