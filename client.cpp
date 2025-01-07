@@ -16,13 +16,12 @@ ssize_t read_all(int sock, char* buffer, size_t size, int e, int d) {
     unsigned int before;
     unsigned int interval;
 
-    before = timeUs();
     while (total_read < size) {
+        before = timeUs();
         ssize_t bytes_read = read(sock, buffer + total_read, size - total_read);
-
         interval = timeUs() - before;
         printf("iteration %d decoder %d: bytes_read = %d, interval = %dus\n", e, d, bytes_read, interval);
-        before = timeUs();
+
         
         if (bytes_read < 0) {
             perror("Read error");
