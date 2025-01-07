@@ -151,7 +151,7 @@ int main(int argc, char* argv[]) {
         for (int i = 0; i < iterations; ++i) {
             // After reading from all clients, send data back to all clients
             for (int client_socket : client_sockets) {
-                send(client_socket, data, data_size);
+                send(client_socket, data, data_size, 0);
                 // send_all(client_socket, data, data_size);
             }
 
