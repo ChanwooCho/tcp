@@ -83,6 +83,8 @@ int main(int argc, char *argv[]) {
     int totalBytesToRead;
     int bytesRead;
     int cnt;
+    unsigned int before;
+
     for (int e = 0; e < 50; ++e) {
         for (int i = 0; i < iterations; ++i) {
             totalBytesToRead = data_size;
