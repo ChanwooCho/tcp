@@ -70,45 +70,47 @@ int main(int argc, char *argv[]) {
     std::cout << "Connected to server at " << ip_address << ":" << port << std::endl;
     
     // 기존 코드
+    for (int e = 0; e < 50; ++e) {
+        for (int i = 0; i < iterations; ++i) {
+            // Receive data_size KB data from server
+            ssize_t read_size = read(sock, buffer, data_size);
+            printf("read = %d\n", read_size); 
+            
+            // Send data_size KB data to server
+            ssize_t send_size = send(sock, data, data_size, 0);
+            printf("send = %d\n", send_size);
+        }
+    }
+
+    // int totalBytesToRead;
+    // int bytesRead;
+    // int cnt;
+    // unsigned int before;
+    // unsigned int interval;
     // for (int e = 0; e < 50; ++e) {
     //     for (int i = 0; i < iterations; ++i) {
+    //         totalBytesToRead = data_size;
+    //         bytesRead = 0;
+    //         cnt = 0;
     //         // Receive data_size KB data from server
-    //         read(sock, buffer, data_size);
-            
+    //         before = timeUs();
+    //         while (bytesRead < totalBytesToRead) {
+    //             ssize_t ret = read(sock, buffer + bytesRead, totalBytesToRead - bytesRead);
+    //             interval = timeUs() - before;
+    //             printf("sliced_data = %d, time = %dus\n", ret, interval); 
+    //             before = timeUs();
+    //             if (ret <= 0) {
+    //                 // Handle error or EOF
+    //                 break;
+    //             }
+    //             cnt += 1;
+    //             bytesRead += ret;
+    //         }
+    //         printf("=====cnt = %d, bytes = %d\n", cnt, bytesRead);
     //         // Send data_size KB data to server
     //         send(sock, data, data_size, 0);
     //     }
     // }
-
-    int totalBytesToRead;
-    int bytesRead;
-    int cnt;
-    unsigned int before;
-    unsigned int interval;
-    for (int e = 0; e < 50; ++e) {
-        for (int i = 0; i < iterations; ++i) {
-            totalBytesToRead = data_size;
-            bytesRead = 0;
-            cnt = 0;
-            // Receive data_size KB data from server
-            before = timeUs();
-            while (bytesRead < totalBytesToRead) {
-                ssize_t ret = read(sock, buffer + bytesRead, totalBytesToRead - bytesRead);
-                interval = timeUs() - before;
-                printf("sliced_data = %d, time = %dus\n", ret, interval); 
-                before = timeUs();
-                if (ret <= 0) {
-                    // Handle error or EOF
-                    break;
-                }
-                cnt += 1;
-                bytesRead += ret;
-            }
-            printf("=====cnt = %d, bytes = %d\n", cnt, bytesRead);
-            // Send data_size KB data to server
-            send(sock, data, data_size, 0);
-        }
-    }
 
     // Close socket
     close(sock);
