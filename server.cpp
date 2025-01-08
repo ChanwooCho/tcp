@@ -168,7 +168,7 @@ int main(int argc, char* argv[]) {
             for (int client_socket : client_sockets) {
                 before2 = timeUs();
                 // size_t bytes_send = send(client_socket, data, data_size, 0);
-                size_t bytes_send = send_all(client_socket, data, data_size);
+                size_t bytes_send = send_all(client_socket, data, data_size, e, i);
                 interval2 = timeUs() - before2;
                 // printf("iteration %d decoder %d: bytes_send = %d, interval_send = %dus\n", e, i, bytes_send, interval2);
             }
@@ -178,7 +178,7 @@ int main(int argc, char* argv[]) {
             for (int client_socket : client_sockets) {
                 before2 = timeUs();
                 // size_t bytes_read = read(client_socket, buffer, data_size);
-                size_t bytes_read = read_all(client_socket, buffer, data_size);
+                size_t bytes_read = read_all(client_socket, buffer, data_size, e, i);
                 interval2 = timeUs() - before2;
                 // printf("iteration %d decoder %d: bytes_read = %d, interval_read = %dus\n", e, i, bytes_read, interval2);
             }
