@@ -181,11 +181,11 @@ int main(int argc, char* argv[]) {
             }
             sum_interval3 += interval2;
         }
-        printf("iteration %d'sAveraged send time = %d ms, Averaged read time = %d ms\n", e, sum_interval2 / 1000, sum_interval3 / 1000);
+        printf("iteration %d's send time = %d ms, read time = %d ms\n", e, sum_interval2 / 1000, sum_interval3 / 1000);
         interval = timeUs() - before;
         if (e > 10) {
             sum_interval += interval;
-            printf("iteration %d'sAveraged Time = %d ms\n", e, sum_interval / 1000 / (e - 10));
+            printf("iteration %d'sAveraged Time = %d ms\n\n", e, sum_interval / 1000 / (e - 10));
         }
     }
 
