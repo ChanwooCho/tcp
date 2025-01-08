@@ -176,12 +176,11 @@ int main(int argc, char* argv[]) {
 
             for (int client_socket : client_sockets) {
                 before2 = timeUs();
-                // size_t bytes_read = read(client_socket, buffer, data_size);
-                size_t bytes_read = read_all(client_socket, buffer, data_size, e, i);
+                size_t bytes_read = read(client_socket, buffer, data_size);
+                // size_t bytes_read = read_all(client_socket, buffer, data_size, e, i);
                 interval2 = timeUs() - before2;
                 // printf("iteration %d decoder %d: bytes_read = %d, interval_read = %dus\n", e, i, bytes_read, interval2);
             }
-            usleep(1000);
             sum_interval3 += interval2;
             printf("current recieve data = %c\n", buffer[data_size - 1]);
         }
