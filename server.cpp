@@ -25,7 +25,6 @@ ssize_t read_all(int sock, char* buffer, size_t size, int e, int d) {
         ssize_t bytes_read = read(sock, buffer + total_read, size - total_read);
         interval = timeUs() - before;
         printf("iteration %d decoder %d: bytes_read = %d, interval = %dus\n", e, d, bytes_read, interval);
-        return total_read;
         
         if (bytes_read < 0) {
             perror("Read error");
@@ -35,6 +34,7 @@ ssize_t read_all(int sock, char* buffer, size_t size, int e, int d) {
             break;
         }
         total_read += bytes_read;
+        return total_read;
     }
     return total_read;
 }
