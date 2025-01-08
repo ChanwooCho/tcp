@@ -34,7 +34,6 @@ ssize_t read_all(int sock, char* buffer, size_t size, int e, int d) {
             break;
         }
         total_read += bytes_read;
-        return total_read;
     }
     return total_read;
 }
