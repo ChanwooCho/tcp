@@ -75,9 +75,6 @@ int main(int argc, char *argv[]) {
     char *buffer = new char[data_size];
     char *data = new char[data_size];
 
-    // Fill the data buffer with some data
-    memset(data, 'A', data_size);
-
     // Create socket
     if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
         std::cerr << "Socket creation error" << std::endl;
@@ -132,12 +129,12 @@ int main(int argc, char *argv[]) {
         sum_interval2 = 0;
         sum_interval3 = 0;
         for (int i = 0; i < iterations; ++i) {
-            
+            memset(data, 'A' + i % 26, data_size);
             before2 = timeUs();
             ssize_t bytes_received = read_all(sock, buffer, data_size, e, i);
             interval2 = timeUs() - before2;
             sum_interval2 += interval2;
-            
+            printf("%s\n", data);
             before2 = timeUs();
             ssize_t bytes_sent = send_all(sock, data, data_size, e, i);
             interval2 = timeUs() - before2;
