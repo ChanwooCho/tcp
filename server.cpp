@@ -126,7 +126,7 @@ int main(int argc, char* argv[]) {
         sum_interval2 = 0;
         sum_interval3 = 0;
         for (int i = 0; i < iterations; ++i) {
-            // After reading from all clients, send data back to all clients
+            memset(data, 'A' + i % 26, data_size);
             for (int client_socket : client_sockets) {
                 before2 = timeUs();
                 size_t bytes_send = send(client_socket, data, data_size, 0);
