@@ -131,13 +131,16 @@ int main(int argc, char *argv[]) {
         for (int i = 0; i < iterations; ++i) {
             memset(data, 'A' + i % 26, data_size);
             before2 = timeUs();
-            read(sock, buffer, data_size);
-            // ssize_t bytes_received = read_all(sock, buffer, data_size, e, i);
+            // read(sock, buffer, data_size);
+            ssize_t bytes_received = read_all(sock, buffer, data_size, e, i);
             interval2 = timeUs() - before2;
             sum_interval2 += interval2;
 
+            usleep(1000);
+
             before2 = timeUs();
-            ssize_t bytes_sent = send(sock, data, data_size, 0);
+            // ssize_t bytes_sent = send(sock, data, data_size, 0);
+            ssize_t bytes_received = send_all(sock, buffer, data_size, e, i);
             interval2 = timeUs() - before2;
             sum_interval3 += interval2;
 
