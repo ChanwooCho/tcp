@@ -129,6 +129,8 @@ int main(int argc, char *argv[]) {
     unsigned int sum_interval3;
     for (int e = 0; e < 50; ++e) {
         before = timeUs();
+        sum_interval2 = 0;
+        sum_interval3 = 0;
         for (int i = 0; i < iterations; ++i) {
             
             before2 = timeUs();
