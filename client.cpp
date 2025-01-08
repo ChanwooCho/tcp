@@ -17,10 +17,10 @@ ssize_t read_all(int sock, char* buffer, size_t size, int e, int d) {
     unsigned int interval;
 
     while (total_read < size) {
-        // before = timeUs();
+        before = timeUs();
         ssize_t bytes_read = read(sock, buffer + total_read, size - total_read);
-        // interval = timeUs() - before;
-        // printf("iteration %d decoder %d: bytes_read = %d, interval = %dus\n", e, d, bytes_read, interval);
+        interval = timeUs() - before;
+        printf("iteration %d decoder %d: bytes_read = %d, interval = %dus\n", e, d, bytes_read, interval);
 
         if (bytes_read < 0) {
             perror("Read error");
@@ -44,7 +44,7 @@ ssize_t send_all(int sock, const char* data, size_t size, int e, int d) {
         }
         total_sent += bytes_sent;
     }
-    // printf("==============================================================\n");
+    printf("==============================================================\n");
     return total_sent;
 }
 
@@ -129,22 +129,22 @@ int main(int argc, char *argv[]) {
         sum_interval3 = 0;
         for (int i = 0; i < iterations; ++i) {
             memset(data, 'A' + i % 26, data_size);
-            // before2 = timeUs();
+            before2 = timeUs();
             // read(sock, buffer, data_size);
             ssize_t bytes_received = read_all(sock, buffer, data_size, e, i);
-            // interval2 = timeUs() - before2;
-            // sum_interval2 += interval2;
+            interval2 = timeUs() - before2;
+            sum_interval2 += interval2;
 
-            // before2 = timeUs();
+            before2 = timeUs();
             // ssize_t bytes_sent = send(sock, data, data_size, 0);
             ssize_t bytes_sent = send_all(sock, buffer, data_size, e, i);
-            // interval2 = timeUs() - before2;
-            // sum_interval3 += interval2;
+            interval2 = timeUs() - before2;
+            sum_interval3 += interval2;
 
             // printf("current recieve data = %c\n", buffer[data_size - 1]);
         }
         interval = timeUs() - before;
-        // printf("iteration %d's read time = %d ms, send time = %d ms\n", e, sum_interval2 / 1000, sum_interval3 / 1000);
+        printf("iteration %d's read time = %d ms, send time = %d ms\n", e, sum_interval2 / 1000, sum_interval3 / 1000);
         if (e > 10) {
             sum_interval += interval;
             printf("iteration %d'sAveraged Time = %d ms\n\n", e, sum_interval / 1000 / (e - 10));
