@@ -42,7 +42,7 @@ ssize_t send_all(int sock, const char* data, size_t size, int e, int d) {
         before = timeUs();
         ssize_t bytes_sent = send(sock, data + total_sent, size - total_sent, 0);
         interval = timeUs() - before;
-        printf("iteration %d decoder %d: bytes_send = %d, interval = %dus\n", e, d, bytes_read, interval);
+        printf("iteration %d decoder %d: bytes_send = %d, interval = %dus\n", e, d, bytes_send, interval);
         if (bytes_sent < 0) {
             perror("Send error");
             return -1;
