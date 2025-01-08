@@ -15,44 +15,6 @@ unsigned long timeUs() {
     return te.tv_sec * 1000000LL + te.tv_usec;
 }
 
-bool read_all(int socket, char* buffer, size_t size) {
-    size_t total_read = 0;
-    while (total_read < size) {
-        ssize_t bytes_read = read(socket, buffer + total_read, size - total_read);
-        if (bytes_read < 0) {
-            if (errno == EINTR) continue; // Interrupted, try again
-            perror("read");
-            return false;
-        }
-        if (bytes_read == 0) {
-            // Connection closed by client
-            std::cerr << "Client disconnected unexpectedly." << std::endl;
-            return false;
-        }
-        total_read += bytes_read;
-    }
-    return true;
-}
-
-bool send_all(int socket, const char* buffer, size_t size) {
-    size_t total_sent = 0;
-    while (total_sent < size) {
-        ssize_t bytes_sent = send(socket, buffer + total_sent, size - total_sent, 0);
-        if (bytes_sent < 0) {
-            if (errno == EINTR) continue; // Interrupted, try again
-            perror("send");
-            return false;
-        }
-        if (bytes_sent == 0) {
-            // Connection closed by client
-            std::cerr << "Client disconnected unexpectedly during send." << std::endl;
-            return false;
-        }
-        total_sent += bytes_sent;
-    }
-    return true;
-}
-
 int main(int argc, char* argv[]) {
     if (argc != 5) {
         std::cerr << "Usage: server <data_size(KB)> <# of decoders> <# of clients> <port>" << std::endl;
