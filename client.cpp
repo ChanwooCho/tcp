@@ -20,7 +20,7 @@ ssize_t read_all(int sock, char* buffer, size_t size, int e, int d) {
         before = timeUs();
         ssize_t bytes_read = read(sock, buffer + total_read, size - total_read);
         interval = timeUs() - before;
-        // printf("iteration %d decoder %d: bytes_read = %d, interval = %dus\n", e, d, bytes_read, interval);
+        printf("iteration %d decoder %d: bytes_read = %d, interval = %dus\n", e, d, bytes_read, interval);
 
         
         if (bytes_read < 0) {
@@ -45,7 +45,7 @@ ssize_t send_all(int sock, const char* data, size_t size, int e, int d) {
         }
         total_sent += bytes_sent;
     }
-    // printf("==============================================================\n");
+    printf("==============================================================\n");
     return total_sent;
 }
 
@@ -126,18 +126,18 @@ int main(int argc, char *argv[]) {
     for (int e = 0; e < 50; ++e) {
         before = timeUs();
         for (int i = 0; i < iterations; ++i) {
+            
             // Recieve data_size bytes to server
             ssize_t bytes_received = read_all(sock, buffer, data_size, e, i);
 
-            
             // Send data_size bytes to server
             ssize_t bytes_sent = send_all(sock, data, data_size, e, i);
         }
         interval = timeUs() - before;
-        if (e > 10) {
-            sum_interval += interval;
-            printf("iteration %d'sAveraged Time = %d ms\n", e, sum_interval / 1000 / (e - 10));
-        }
+        // if (e > 10) {
+        //     sum_interval += interval;
+        //     printf("iteration %d'sAveraged Time = %d ms\n", e, sum_interval / 1000 / (e - 10));
+        // }
     }
 
     // Close socket
