@@ -134,7 +134,7 @@ int main(int argc, char *argv[]) {
             ssize_t bytes_received = read_all(sock, buffer, data_size, e, i);
             interval2 = timeUs() - before2;
             sum_interval2 += interval2;
-            printf("%s\n", data);
+            printf("%s\n", buffer);
             before2 = timeUs();
             ssize_t bytes_sent = send_all(sock, data, data_size, e, i);
             interval2 = timeUs() - before2;
