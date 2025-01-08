@@ -19,23 +19,23 @@ ssize_t read_all(int sock, char* buffer, size_t size, int e, int d) {
     size_t total_read = 0;
     unsigned int before;
     unsigned int interval;
-    ssize_t bytes_read = read(sock, buffer + total_read, size - total_read);
-    // while (total_read < size) {
-    //     before = timeUs();
-    //     ssize_t bytes_read = read(sock, buffer + total_read, size - total_read);
-    //     interval = timeUs() - before;
-    //     printf("iteration %d decoder %d: bytes_read = %d, interval = %dus\n", e, d, bytes_read, interval);
 
+    while (total_read < size) {
+        before = timeUs();
+        ssize_t bytes_read = read(sock, buffer + total_read, size - total_read);
+        interval = timeUs() - before;
+        printf("iteration %d decoder %d: bytes_read = %d, interval = %dus\n", e, d, bytes_read, interval);
+        return total_read;
         
-    //     if (bytes_read < 0) {
-    //         perror("Read error");
-    //         return -1;
-    //     } else if (bytes_read == 0) {
-    //         // Connection closed
-    //         break;
-    //     }
-    //     total_read += bytes_read;
-    // }
+        if (bytes_read < 0) {
+            perror("Read error");
+            return -1;
+        } else if (bytes_read == 0) {
+            // Connection closed
+            break;
+        }
+        total_read += bytes_read;
+    }
     return total_read;
 }
 
