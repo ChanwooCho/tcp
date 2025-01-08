@@ -136,7 +136,7 @@ int main(int argc, char *argv[]) {
             sum_interval2 += interval2;
 
             before2 = timeUs();
-            ssize_t bytes_sent = send_all(sock, data, data_size, e, i);
+            ssize_t bytes_sent = send(sock, data, data_size, 0);
             interval2 = timeUs() - before2;
             sum_interval3 += interval2;
 
