@@ -157,6 +157,7 @@ int main(int argc, char* argv[]) {
     unsigned int sum_interval = 0;
     unsigned int sum_interval2;
     unsigned int sum_interval3;
+    
     // Main loop to handle reading and writing for all clients
     for (int e = 0; e < 50; ++e) { // Iterate multiple times as per the original logic
         before = timeUs();
@@ -176,6 +177,7 @@ int main(int argc, char* argv[]) {
             for (int client_socket : client_sockets) {
                 before2 = timeUs();
                 size_t bytes_read = read(client_socket, buffer, data_size);
+                print("%s\n", buffer);
                 interval2 = timeUs() - before2;
                 // printf("iteration %d decoder %d: bytes_read = %d, interval_read = %dus\n", e, i, bytes_read, interval2);
             }
