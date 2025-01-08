@@ -120,8 +120,11 @@ int main(int argc, char *argv[]) {
     //     }
     // }
 
-
+    unsigned int before;
+    unsigned int interval;
+    unsigned int sum_interval;
     for (int e = 0; e < 50; ++e) {
+        before = timeUs();
         for (int i = 0; i < iterations; ++i) {
             // Recieve data_size bytes to server
             ssize_t bytes_received = read_all(sock, buffer, data_size, e, i);
@@ -129,6 +132,11 @@ int main(int argc, char *argv[]) {
             
             // Send data_size bytes to server
             ssize_t bytes_sent = send_all(sock, data, data_size, e, i);
+        }
+        interval = timeUs() - before;
+        if (e > 10) {
+            sum_interval += interval;
+            printf("iteration %d'sAveraged Time = %d ms\n", e, sum_interval / 1000 / (e - 10));
         }
     }
 
