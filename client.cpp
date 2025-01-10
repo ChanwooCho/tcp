@@ -17,7 +17,7 @@ ssize_t read_all(int sock, char* buffer, size_t size, int e, int d) {
     size_t total_read = 0;
     unsigned int before;
     unsigned int interval;
-    unsigned int is_first = 1;;
+    unsigned int is_first = 1;
     
     while (total_read < size) {
         before = timeUs();
