@@ -25,8 +25,8 @@ ssize_t read_all(int sock, char* buffer, size_t size, int e, int d) {
         interval = timeUs() - before;
         if (min_latency > interval && is_first) {
             min_latency = interval;
-            is_first = 0;
         }
+        is_first = 0;
         // printf("iteration %d decoder %d: bytes_read = %d, interval = %dus\n", e, d, bytes_read, interval);
 
         if (bytes_read < 0) {
