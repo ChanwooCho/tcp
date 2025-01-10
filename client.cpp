@@ -17,13 +17,15 @@ ssize_t read_all(int sock, char* buffer, size_t size, int e, int d) {
     size_t total_read = 0;
     unsigned int before;
     unsigned int interval;
-
+    unsigned int is_first = 1;;
+    
     while (total_read < size) {
         before = timeUs();
         ssize_t bytes_read = read(sock, buffer + total_read, size - total_read);
         interval = timeUs() - before;
-        if (min_latency > interval) {
+        if (min_latency > interval && is_first) {
             min_latency = interval;
+            is_first = 0;
         }
         // printf("iteration %d decoder %d: bytes_read = %d, interval = %dus\n", e, d, bytes_read, interval);
 
