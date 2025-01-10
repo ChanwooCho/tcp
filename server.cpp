@@ -9,6 +9,14 @@
 #include <sys/time.h>
 #include <thread>
 
+int flag = 1;
+if (setsockopt(sock, IPPROTO_TCP, TCP_NODELAY, &flag, sizeof(flag)) < 0) {
+    perror("setsockopt(TCP_NODELAY) failed");
+}
+
+int buff_size = 1 * 1024 * 1024; // 1MB, for example
+setsockopt(sock, SOL_SOCKET, SO_SNDBUF, &buff_size, sizeof(buff_size));
+setsockopt(sock, SOL_SOCKET, SO_RCVBUF, &buff_size, sizeof(buff_size));
 unsigned long timeUs() {
     struct timeval te; 
     gettimeofday(&te, NULL);
