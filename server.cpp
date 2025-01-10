@@ -9,6 +9,12 @@
 #include <sys/time.h>
 #include <thread>
 
+unsigned long timeUs() {
+    struct timeval te; 
+    gettimeofday(&te, NULL);
+    return te.tv_sec * 1000000LL + te.tv_usec;
+}
+
 ssize_t read_all(int sock, char* buffer, size_t size, int e, int d) {
     size_t total_read = 0;
     unsigned int before;
@@ -84,11 +90,6 @@ int main(int argc, char* argv[]) {
     int buff_size = 1 * 1024 * 1024; // 1MB, for example
     setsockopt(server_fd, SOL_SOCKET, SO_SNDBUF, &buff_size, sizeof(buff_size));
     setsockopt(server_fd, SOL_SOCKET, SO_RCVBUF, &buff_size, sizeof(buff_size));
-    unsigned long timeUs() {
-        struct timeval te; 
-        gettimeofday(&te, NULL);
-        return te.tv_sec * 1000000LL + te.tv_usec;
-    }
 
     // Attach socket to the port
     if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt))) {
