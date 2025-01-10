@@ -82,12 +82,11 @@ int main(int argc, char* argv[]) {
         delete[] data;
         return -1;
     }
-
-    int flag = 1;
-    if (setsockopt(server_fd, IPPROTO_TCP, TCP_NODELAY, &flag, sizeof(flag)) < 0) {
-        perror("setsockopt(TCP_NODELAY) failed");
-    }
-    
+    // disable nagle algorithm
+    // int flag = 1;
+    // if (setsockopt(server_fd, IPPROTO_TCP, TCP_NODELAY, &flag, sizeof(flag)) < 0) {
+    //     perror("setsockopt(TCP_NODELAY) failed");
+    // }
     // int buff_size = 1 * 1024 * 1024; // 1MB, for example
     // setsockopt(server_fd, SOL_SOCKET, SO_SNDBUF, &buff_size, sizeof(buff_size));
     // setsockopt(server_fd, SOL_SOCKET, SO_RCVBUF, &buff_size, sizeof(buff_size));
