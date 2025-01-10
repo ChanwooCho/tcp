@@ -94,9 +94,9 @@ int main(int argc, char *argv[]) {
         perror("setsockopt(TCP_NODELAY) failed");
     }
     
-    int buff_size = 1 * 1024 * 1024; // 1MB, for example
-    setsockopt(sock, SOL_SOCKET, SO_SNDBUF, &buff_size, sizeof(buff_size));
-    setsockopt(sock, SOL_SOCKET, SO_RCVBUF, &buff_size, sizeof(buff_size));
+    // int buff_size = 1 * 1024 * 1024; // 1MB, for example
+    // setsockopt(sock, SOL_SOCKET, SO_SNDBUF, &buff_size, sizeof(buff_size));
+    // setsockopt(sock, SOL_SOCKET, SO_RCVBUF, &buff_size, sizeof(buff_size));
 
     serv_addr.sin_family = AF_INET;
     serv_addr.sin_port = htons(port);
