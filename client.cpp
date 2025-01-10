@@ -12,7 +12,7 @@ unsigned long timeUs() {
     gettimeofday(&te, NULL);
     return te.tv_sec * 1000000LL + te.tv_usec;
 }
-unsigned int min_latency = 99999;
+unsigned int min_latency;
 ssize_t read_all(int sock, char* buffer, size_t size, int e, int d) {
     size_t total_read = 0;
     unsigned int before;
@@ -143,6 +143,7 @@ int main(int argc, char *argv[]) {
     unsigned int sum_interval2;
     unsigned int sum_interval3;
     for (int e = 0; e < 50; ++e) {
+        min_latency = 99999;
         before = timeUs();
         sum_interval2 = 0;
         sum_interval3 = 0;
@@ -164,11 +165,12 @@ int main(int argc, char *argv[]) {
         }
         interval = timeUs() - before;
         printf("iteration %d's read time = %d ms, send time = %d ms\n", e, sum_interval2 / 1000, sum_interval3 / 1000);
+        printf("minimum latency = %dus\n", min_latency); 
+        printf("==============================================================\n");
         if (e > 10) {
             sum_interval += interval;
             printf("iteration %d'sAveraged Time = %d ms\n\n", e, sum_interval / 1000 / (e - 10));
         }
-        printf("minimum latency = %dus\n", min_latency); 
     }
     
 
