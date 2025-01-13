@@ -41,14 +41,17 @@ ssize_t read_all(int sock, char* buffer, size_t size, int e, int d) {
 ssize_t send_all(int sock, const char* data, size_t size, int e, int d) {
     size_t total_sent = 0;
     while (total_sent < size) {
+        before = timeUs();
         ssize_t bytes_sent = send(sock, data + total_sent, size - total_sent, 0);
+        interval = timeUs() - before;
+        printf("iteration %d decoder %d: bytes_sent = %d, interval = %dus\n", e, d, bytes_sent, interval);
         if (bytes_sent < 0) {
             perror("Send error");
             return -1;
         }
         total_sent += bytes_sent;
     }
-    // printf("==============================================================\n");
+    printf("==============================================================\n");
     return total_sent;
 }
 
