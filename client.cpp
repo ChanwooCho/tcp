@@ -166,9 +166,8 @@ int main(int argc, char *argv[]) {
             // printf("current recieve data = %c\n", buffer[data_size - 1]);
             interval = timeUs() - before;
             printf("iteration %d decoder %d: interval = %dus\n", e, i, interval);
+            printf("==============================================================\n");
         }
-
-        printf("==============================================================\n");
         // printf("iteration %d's read time = %d ms, send time = %d ms\n", e, sum_interval2 / 1000, sum_interval3 / 1000);
         // printf("minimum latency = %dus\n", min_latency); 
         // printf("==============================================================\n");
