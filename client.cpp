@@ -137,35 +137,24 @@ int main(int argc, char *argv[]) {
     //     }
     // }
 
-    unsigned int before;
+    unsigned int before1;
     unsigned int before2;
-    unsigned int interval;
+    unsigned int interval1;
     unsigned int interval2;
-    unsigned int sum_interval = 0;
+    unsigned int sum_interval1 = 0;
     unsigned int sum_interval2;
     unsigned int sum_interval3;
     for (int e = 0; e < 50; ++e) {
-        min_latency = 99999;
-        before = timeUs();
-        sum_interval2 = 0;
-        sum_interval3 = 0;
         for (int i = 0; i < iterations; ++i) {
             memset(data, 'A' + i % 26, data_size);
-            before2 = timeUs();
-            // read(sock, buffer, data_size);
+            before1 = timeUs();
             ssize_t bytes_received = read_all(sock, buffer, data_size, e, i);
-            interval2 = timeUs() - before2;
-            sum_interval2 += interval2;
 
-            before2 = timeUs();
-            // ssize_t bytes_sent = send(sock, data, data_size, 0);
             ssize_t bytes_sent = send_all(sock, buffer, data_size, e, i);
-            interval2 = timeUs() - before2;
-            sum_interval3 += interval2;
 
             // printf("current recieve data = %c\n", buffer[data_size - 1]);
-            interval = timeUs() - before;
-            printf("iteration %d decoder %d: interval = %dus\n", e, i, interval);
+            interval1 = timeUs() - before1;
+            printf("iteration %d decoder %d: interval = %dus\n", e, i, interval1);
             printf("==============================================================\n");
         }
         // printf("iteration %d's read time = %d ms, send time = %d ms\n", e, sum_interval2 / 1000, sum_interval3 / 1000);
