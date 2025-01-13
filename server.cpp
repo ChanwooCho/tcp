@@ -197,7 +197,7 @@ int main(int argc, char* argv[]) {
             }
             // sum_interval3 += interval2;
             // printf("current recieve data = %c\n", buffer[data_size - 1]);
-            interval1 = timeUs() - before;
+            interval1 = timeUs() - before1;
             sum_interval1 += interval1;
             printf("iteration %d decoder %d: interval = %dus\n", e, i, interval1);
         }
