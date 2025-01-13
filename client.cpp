@@ -27,7 +27,7 @@ ssize_t read_all(int sock, char* buffer, size_t size, int e, int d) {
             min_latency = interval;
         }
         is_first = 0;
-        // printf("iteration %d decoder %d: bytes_read = %d, interval = %dus\n", e, d, bytes_read, interval);
+        printf("iteration %d decoder %d: bytes_read = %d, interval = %dus\n", e, d, bytes_read, interval);
 
         if (bytes_read < 0) {
             perror("Read error");
@@ -49,14 +49,14 @@ ssize_t send_all(int sock, const char* data, size_t size, int e, int d) {
         before = timeUs();
         ssize_t bytes_sent = send(sock, data + total_sent, size - total_sent, 0);
         interval = timeUs() - before;
-        // printf("iteration %d decoder %d: bytes_send = %d, interval = %dus\n", e, d, bytes_sent, interval);
+        printf("iteration %d decoder %d: bytes_send = %d, interval = %dus\n", e, d, bytes_sent, interval);
         if (bytes_sent < 0) {
             perror("Send error");
             return -1;
         }
         total_sent += bytes_sent;
     }
-    // printf("==============================================================\n");
+    printf("==============================================================\n");
     return total_sent;
 }
 
@@ -166,9 +166,9 @@ int main(int argc, char *argv[]) {
             // printf("current recieve data = %c\n", buffer[data_size - 1]);
         }
         interval = timeUs() - before;
-        printf("iteration %d's read time = %d ms, send time = %d ms\n", e, sum_interval2 / 1000, sum_interval3 / 1000);
-        printf("minimum latency = %dus\n", min_latency); 
-        printf("==============================================================\n");
+        // printf("iteration %d's read time = %d ms, send time = %d ms\n", e, sum_interval2 / 1000, sum_interval3 / 1000);
+        // printf("minimum latency = %dus\n", min_latency); 
+        // printf("==============================================================\n");
         // if (e > 10) {
         //     sum_interval += interval;
         //     printf("iteration %d'sAveraged Time = %d ms\n\n", e, sum_interval / 1000 / (e - 10));
