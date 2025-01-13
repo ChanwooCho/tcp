@@ -35,7 +35,6 @@ ssize_t read_all(int sock, char* buffer, size_t size, int e, int d) {
         }
         total_read += bytes_read;
     }
-    printf("==============================================================\n");
     return total_read;
 }
 
@@ -200,6 +199,7 @@ int main(int argc, char* argv[]) {
             interval1 = timeUs() - before1;
             sum_interval1 += interval1;
             printf("iteration %d decoder %d: interval = %dus\n", e, i, interval1);
+            printf("==============================================================\n");
         }
         // printf("iteration %d's send time = %d ms, read time = %d ms\n", e, sum_interval2 / 1000, sum_interval3 / 1000);
         printf("iteration %d' Time = %d ms\n\n", e, sum_interval1 / 1000);
