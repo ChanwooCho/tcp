@@ -25,9 +25,14 @@ unsigned long timeUs() {
 // ----------------------------------------------------------------------
 ssize_t read_all(int sock, char* buffer, size_t size, int e, int d) {
     size_t total_read = 0;
+    unsigned int before;
+    unsigned int interval;
 
     while (total_read < size) {
+        before = timeUs();
         ssize_t bytes_read = read(sock, buffer + total_read, size - total_read);
+        interval = timeUs() - before;
+        printf("iteration %d decoder %d: bytes_read = %d, interval = %dus\n", e, d, bytes_read, interval);
         if (bytes_read < 0) {
             perror("Read error");
             return -1;
@@ -45,21 +50,19 @@ ssize_t read_all(int sock, char* buffer, size_t size, int e, int d) {
 // ----------------------------------------------------------------------
 ssize_t send_all(int sock, const char* data, size_t size, int e, int d) {
     size_t total_sent = 0;
+    unsigned int before;
+    unsigned int interval;
     while (total_sent < size) {
-        unsigned int before = timeUs();
+        before = timeUs();
         ssize_t bytes_sent = send(sock, data + total_sent, size - total_sent, 0);
-        unsigned int interval = timeUs() - before;
-
-        printf("iteration %d decoder %d: bytes_sent = %zd, interval = %dus\n",
-               e, d, bytes_sent, interval);
-
+        interval = timeUs() - before;
+        printf("iteration %d decoder %d: bytes_sent = %d, interval = %dus\n", e, d, bytes_sent, interval);
         if (bytes_sent < 0) {
             perror("Send error");
             return -1;
         }
         total_sent += bytes_sent;
     }
-    printf("==============================================================\n");
     return total_sent;
 }
 
@@ -188,16 +191,24 @@ int main(int argc, char* argv[]) {
     }
 
     std::cout << "Minimum " << num_clients << " clients connected. Starting main loop." << std::endl;
-
+    unsigned int before1;
+    unsigned int before2;
+    unsigned int interval1;
+    unsigned int interval2;
+    unsigned int sum_interval1;
+    unsigned int sum_interval2;
+    unsigned int sum_interval3;
+    
     // Outer loop (50 times, per your original code)
     for (int e = 0; e < 50; ++e) {
-        unsigned int start_time = timeUs();
-
+        sum_interval1 = 0;
+        sum_interval2 = 0;
+        sum_interval3 = 0;
         // We'll do 'iterations' for each connected client
         for (int i = 0; i < iterations; ++i) {
             // Prepare the data to send (just fill with some pattern)
             memset(data, 'A' + i % 26, data_size);
-
+            before1 = timeUs();
             // ---------------------------
             // MULTITHREADING PART
             // ---------------------------
@@ -215,17 +226,17 @@ int main(int argc, char* argv[]) {
                     i    // iteration index
                 );
             }
-
             // Wait for all threads to finish before next iteration
             for (auto& t : threads) {
                 t.join();
             }
+            interval1 = timeUs() - before1;
+            sum_interval1 += interval1;
+            printf("iteration %d decoder %d: interval = %dus\n", e, i, interval1);
+            printf("==============================================================\n");
         }
-
-        // Measure time for this outer loop 'e'
-        unsigned int elapsed = timeUs() - start_time;
-        std::cout << "iteration " << e 
-                  << " took " << (elapsed / 1000) << " ms" << std::endl;
+        printf("iteration %d' Time = %d ms\n\n", e, sum_interval1 / 1000);
+        
     }
 
     // Clean up
