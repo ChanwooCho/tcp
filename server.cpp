@@ -40,6 +40,8 @@ ssize_t read_all(int sock, char* buffer, size_t size, int e, int d) {
 
 ssize_t send_all(int sock, const char* data, size_t size, int e, int d) {
     size_t total_sent = 0;
+    unsigned int before;
+    unsigned int interval;
     while (total_sent < size) {
         before = timeUs();
         ssize_t bytes_sent = send(sock, data + total_sent, size - total_sent, 0);
