@@ -162,22 +162,22 @@ int main(int argc, char* argv[]) {
 
     std::cout << "Minimum " << num_clients << " clients connected. Starting main loop." << std::endl;
 
-    unsigned int before;
+    unsigned int before1;
     unsigned int before2;
-    unsigned int interval;
+    unsigned int interval1;
     unsigned int interval2;
-    unsigned int sum_interval = 0;
+    unsigned int sum_interval1 = 0;
     unsigned int sum_interval2;
     unsigned int sum_interval3;
     
     // Main loop to handle reading and writing for all clients
     for (int e = 0; e < 50; ++e) { // Iterate multiple times as per the original logic
-
+        sum_interval1 = 0;
         sum_interval2 = 0;
         sum_interval3 = 0;
         for (int i = 0; i < iterations; ++i) {
             memset(data, 'A' + i % 26, data_size);
-            before = timeUs();
+            before1 = timeUs();
             for (int client_socket : client_sockets) {
                 // before2 = timeUs();
                 // size_t bytes_send = send(client_socket, data, data_size, 0);
@@ -197,12 +197,12 @@ int main(int argc, char* argv[]) {
             }
             // sum_interval3 += interval2;
             // printf("current recieve data = %c\n", buffer[data_size - 1]);
-            interval = timeUs() - before;
-            sum_interval += interval;
-            printf("iteration %d decoder %d: interval = %dus\n", e, i, interval);
+            interval1 = timeUs() - before;
+            sum_interval1 += interval1;
+            printf("iteration %d decoder %d: interval = %dus\n", e, i, interval1);
         }
         // printf("iteration %d's send time = %d ms, read time = %d ms\n", e, sum_interval2 / 1000, sum_interval3 / 1000);
-        printf("iteration %d' Time = %d ms\n\n", e, interval / 1000);
+        printf("iteration %d' Time = %d ms\n\n", e, sum_interval1 / 1000);
         // if (e > 10) {
         //     sum_interval += interval;
         //     printf("iteration %d'sAveraged Time = %d ms\n\n", e, sum_interval / 1000 / (e - 10));
