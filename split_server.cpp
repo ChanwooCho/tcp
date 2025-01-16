@@ -181,41 +181,41 @@ int main(int argc, char* argv[]) {
             before1 = timeUs();
             for (int client_socket : client_sockets) {
                 std::this_thread::sleep_for(std::chrono::microseconds(234));
-                ssize_t bytes_send = send_all(client_socket, data, 1024, e, i);
+                send_all(client_socket, data, 1024, e, i);
               
                 std::this_thread::sleep_for(std::chrono::microseconds(234));
-                ssize_t bytes_send = send_all(client_socket, data, 1024, e, i);
+                send_all(client_socket, data, 1024, e, i);
               
                 std::this_thread::sleep_for(std::chrono::microseconds(234));
-                ssize_t bytes_send = send_all(client_socket, data, 1024, e, i);
+                send_all(client_socket, data, 1024, e, i);
               
                 std::this_thread::sleep_for(std::chrono::microseconds(234));
-                ssize_t bytes_send = send_all(client_socket, data, 1024, e, i);
+                send_all(client_socket, data, 1024, e, i);
               
                 std::this_thread::sleep_for(std::chrono::microseconds(234));
-                ssize_t bytes_send = send_all(client_socket, data, 1024, e, i);
+                send_all(client_socket, data, 1024, e, i);
               
                 std::this_thread::sleep_for(std::chrono::microseconds(234));
-                ssize_t bytes_send = send_all(client_socket, data, 1024, e, i);
+                send_all(client_socket, data, 1024, e, i);
               
                 std::this_thread::sleep_for(std::chrono::microseconds(234));
-                ssize_t bytes_send = send_all(client_socket, data, 1024, e, i);
+                send_all(client_socket, data, 1024, e, i);
 
                 std::this_thread::sleep_for(std::chrono::microseconds(17));
-                ssize_t bytes_send = send_all(client_socket, data, 104, e, i);
+                send_all(client_socket, data, 104, e, i);
             }
             // sum_interval2 += interval2;
             // Read from all connected clients
 
             for (int client_socket : client_sockets) {
-                size_t bytes_read = read_all(client_socket, buffer, 1024, e, i);
-                size_t bytes_read = read_all(client_socket, buffer, 1024, e, i);
-                size_t bytes_read = read_all(client_socket, buffer, 1024, e, i);
-                size_t bytes_read = read_all(client_socket, buffer, 1024, e, i);
-                size_t bytes_read = read_all(client_socket, buffer, 1024, e, i);
-                size_t bytes_read = read_all(client_socket, buffer, 1024, e, i);
-                size_t bytes_read = read_all(client_socket, buffer, 1024, e, i);
-                size_t bytes_read = read_all(client_socket, buffer, 104, e, i);
+                read_all(client_socket, buffer, 1024, e, i);
+                read_all(client_socket, buffer, 1024, e, i);
+                read_all(client_socket, buffer, 1024, e, i);
+                read_all(client_socket, buffer, 1024, e, i);
+                read_all(client_socket, buffer, 1024, e, i);
+                read_all(client_socket, buffer, 1024, e, i);
+                read_all(client_socket, buffer, 1024, e, i);
+                read_all(client_socket, buffer, 104, e, i);
               
             }
             interval1 = timeUs() - before1;
