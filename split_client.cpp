@@ -1,16 +1,11 @@
 #include <iostream>
 #include <sys/socket.h>
-#include <netinet/in.h>
-#include <netinet/tcp.h>
+#include <arpa/inet.h>
 #include <unistd.h>
 #include <cstring>
-#include <cstdlib>  // For atoi() and malloc()
-#include <vector>
-#include <algorithm> // For std::max
-#include <sys/time.h>
-#include <thread>
-#include <iostream>
-#include <chrono> 
+#include <cstdlib>
+#include <netinet/in.h>
+#include <netinet/tcp.h> 
 
 unsigned long timeUs() {
     struct timeval te; 
@@ -149,16 +144,11 @@ int main(int argc, char *argv[]) {
     unsigned int sum_interval1 = 0;
     unsigned int sum_interval2;
     unsigned int sum_interval3;
-    
-    // Main loop to handle reading and writing for all clients
-    for (int e = 0; e < 50; ++e) { // Iterate multiple times as per the original logic
-        sum_interval1 = 0;
-        sum_interval2 = 0;
-        sum_interval3 = 0;
+    for (int e = 0; e < 50; ++e) {
         for (int i = 0; i < iterations; ++i) {
             memset(data, 'A' + i % 26, data_size);
             before1 = timeUs();
-
+            
             read_all(sock, buffer, 1024, e, i);
             read_all(sock, buffer, 1024, e, i);
             read_all(sock, buffer, 1024, e, i);
@@ -197,16 +187,14 @@ int main(int argc, char *argv[]) {
         }
         printf("iteration %d' Time = %d ms\n\n", e, sum_interval1 / 1000);
     }
+    
 
-    // Clean up resources
-    for (int client_socket : client_sockets) {
-        close(client_socket);
-    }
-    close(server_fd);
+    // Close socket
+    close(sock);
+    
+    // Free dynamically allocated memory
     delete[] buffer;
     delete[] data;
-
-    std::cout << "Connection closed" << std::endl;
 
     return 0;
 }
