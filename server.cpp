@@ -25,7 +25,7 @@ ssize_t read_all(int sock, char* buffer, size_t size, int e, int d) {
         before = timeUs();
         ssize_t bytes_read = read(sock, buffer + total_read, size - total_read);
         interval = timeUs() - before;
-        printf("iteration %d decoder %d: bytes_read = %d, interval = %dus\n", e, d, bytes_read, interval);
+        // printf("iteration %d decoder %d: bytes_read = %d, interval = %dus\n", e, d, bytes_read, interval);
         if (bytes_read < 0) {
             perror("Read error");
             return -1;
@@ -46,7 +46,7 @@ ssize_t send_all(int sock, const char* data, size_t size, int e, int d) {
         before = timeUs();
         ssize_t bytes_sent = send(sock, data + total_sent, size - total_sent, 0);
         interval = timeUs() - before;
-        printf("iteration %d decoder %d: bytes_sent = %d, interval = %dus\n", e, d, bytes_sent, interval);
+        // printf("iteration %d decoder %d: bytes_sent = %d, interval = %dus\n", e, d, bytes_sent, interval);
         if (bytes_sent < 0) {
             perror("Send error");
             return -1;
@@ -198,8 +198,8 @@ int main(int argc, char* argv[]) {
             // printf("current recieve data = %c\n", buffer[data_size - 1]);
             interval1 = timeUs() - before1;
             sum_interval1 += interval1;
-            printf("iteration %d decoder %d: interval = %dus\n", e, i, interval1);
-            printf("==============================================================\n");
+            // printf("iteration %d decoder %d: interval = %dus\n", e, i, interval1);
+            // printf("==============================================================\n");
         }
         // printf("iteration %d's send time = %d ms, read time = %d ms\n", e, sum_interval2 / 1000, sum_interval3 / 1000);
         printf("iteration %d' Time = %d ms\n\n", e, sum_interval1 / 1000);
