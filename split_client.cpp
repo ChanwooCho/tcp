@@ -153,15 +153,15 @@ int main(int argc, char *argv[]) {
             
             read_all(sock, buffer, 10240, e, i);
 
-            for (int j = 0; j < 7; j++){
-                std::this_thread::sleep_for(std::chrono::microseconds(234));
-                send_all(sock, data, 1448, e, i);
+            for (int j = 0; j < 3; j++){
+                std::this_thread::sleep_for(std::chrono::microseconds(234 * 2));
+                send_all(sock, data, 1448 * 2, e, i);
             }
-            std::this_thread::sleep_for(std::chrono::microseconds(17));
-            send_all(sock, data, 104, e, i);
+            std::this_thread::sleep_for(std::chrono::microseconds(17 + 234));
+            send_all(sock, data, 1448 + 104, e, i);
 
             interval1 = timeUs() - before1;
-            printf("iteration %d' interval = %d us\n\n", e, interval1);
+            printf("iteration %d decoder %d: interval = %dus\n", e, d, interval);
             printf("==============================================================\n");
         }
     }
