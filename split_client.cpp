@@ -59,7 +59,7 @@ ssize_t send_all(int sock, const char* data, size_t size, int e, int d) {
         }
         total_sent += bytes_sent;
     }
-    // printf("==============================================================\n");
+    printf("==============================================================\n");
     return total_sent;
 }
 
@@ -152,43 +152,35 @@ int main(int argc, char *argv[]) {
             memset(data, 'A' + i % 26, data_size);
             before1 = timeUs();
             
-            read_all(sock, buffer, 1024, e, i);
-            read_all(sock, buffer, 1024, e, i);
-            read_all(sock, buffer, 1024, e, i);
-            read_all(sock, buffer, 1024, e, i);
-            read_all(sock, buffer, 1024, e, i);
-            read_all(sock, buffer, 1024, e, i);
-            read_all(sock, buffer, 1024, e, i);
-            read_all(sock, buffer, 104, e, i);
+            read_all(sock, buffer, 10240, e, i);
             
             std::this_thread::sleep_for(std::chrono::microseconds(234));
-            send_all(sock, data, 1024, e, i);
+            send_all(sock, data, 1448, e, i);
           
             std::this_thread::sleep_for(std::chrono::microseconds(234));
-            send_all(sock, data, 1024, e, i);
+            send_all(sock, data, 1448, e, i);
           
             std::this_thread::sleep_for(std::chrono::microseconds(234));
-            send_all(sock, data, 1024, e, i);
+            send_all(sock, data, 1448, e, i);
           
             std::this_thread::sleep_for(std::chrono::microseconds(234));
-            send_all(sock, data, 1024, e, i);
+            send_all(sock, data, 1448, e, i);
           
             std::this_thread::sleep_for(std::chrono::microseconds(234));
-            send_all(sock, data, 1024, e, i);
+            send_all(sock, data, 1448, e, i);
           
             std::this_thread::sleep_for(std::chrono::microseconds(234));
-            send_all(sock, data, 1024, e, i);
+            send_all(sock, data, 1448, e, i);
           
             std::this_thread::sleep_for(std::chrono::microseconds(234));
-            send_all(sock, data, 1024, e, i);
+            send_all(sock, data, 1448, e, i);
 
             std::this_thread::sleep_for(std::chrono::microseconds(17));
             send_all(sock, data, 104, e, i);
 
             interval1 = timeUs() - before1;
-            sum_interval1 += interval1;
+            printf("iteration %d' interval = %d us\n\n", e, interval1);
         }
-        printf("iteration %d' Time = %d ms\n\n", e, sum_interval1 / 1000);
     }
     
 
