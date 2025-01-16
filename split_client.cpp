@@ -158,43 +158,40 @@ int main(int argc, char *argv[]) {
         for (int i = 0; i < iterations; ++i) {
             memset(data, 'A' + i % 26, data_size);
             before1 = timeUs();
-            for (int client_socket : client_sockets) {
-                read_all(client_socket, buffer, 1024, e, i);
-                read_all(client_socket, buffer, 1024, e, i);
-                read_all(client_socket, buffer, 1024, e, i);
-                read_all(client_socket, buffer, 1024, e, i);
-                read_all(client_socket, buffer, 1024, e, i);
-                read_all(client_socket, buffer, 1024, e, i);
-                read_all(client_socket, buffer, 1024, e, i);
-                read_all(client_socket, buffer, 104, e, i);
-            }
 
-            for (int client_socket : client_sockets) {
-                std::this_thread::sleep_for(std::chrono::microseconds(234));
-                send_all(client_socket, data, 1024, e, i);
-              
-                std::this_thread::sleep_for(std::chrono::microseconds(234));
-                send_all(client_socket, data, 1024, e, i);
-              
-                std::this_thread::sleep_for(std::chrono::microseconds(234));
-                send_all(client_socket, data, 1024, e, i);
-              
-                std::this_thread::sleep_for(std::chrono::microseconds(234));
-                send_all(client_socket, data, 1024, e, i);
-              
-                std::this_thread::sleep_for(std::chrono::microseconds(234));
-                send_all(client_socket, data, 1024, e, i);
-              
-                std::this_thread::sleep_for(std::chrono::microseconds(234));
-                send_all(client_socket, data, 1024, e, i);
-              
-                std::this_thread::sleep_for(std::chrono::microseconds(234));
-                send_all(client_socket, data, 1024, e, i);
+            read_all(sock, buffer, 1024, e, i);
+            read_all(sock, buffer, 1024, e, i);
+            read_all(sock, buffer, 1024, e, i);
+            read_all(sock, buffer, 1024, e, i);
+            read_all(sock, buffer, 1024, e, i);
+            read_all(sock, buffer, 1024, e, i);
+            read_all(sock, buffer, 1024, e, i);
+            read_all(sock, buffer, 104, e, i);
+            
+            std::this_thread::sleep_for(std::chrono::microseconds(234));
+            send_all(sock, data, 1024, e, i);
+          
+            std::this_thread::sleep_for(std::chrono::microseconds(234));
+            send_all(sock, data, 1024, e, i);
+          
+            std::this_thread::sleep_for(std::chrono::microseconds(234));
+            send_all(sock, data, 1024, e, i);
+          
+            std::this_thread::sleep_for(std::chrono::microseconds(234));
+            send_all(sock, data, 1024, e, i);
+          
+            std::this_thread::sleep_for(std::chrono::microseconds(234));
+            send_all(sock, data, 1024, e, i);
+          
+            std::this_thread::sleep_for(std::chrono::microseconds(234));
+            send_all(sock, data, 1024, e, i);
+          
+            std::this_thread::sleep_for(std::chrono::microseconds(234));
+            send_all(sock, data, 1024, e, i);
 
-                std::this_thread::sleep_for(std::chrono::microseconds(17));
-                send_all(client_socket, data, 104, e, i);
-              
-            }
+            std::this_thread::sleep_for(std::chrono::microseconds(17));
+            send_all(sock, data, 104, e, i);
+
             interval1 = timeUs() - before1;
             sum_interval1 += interval1;
         }
