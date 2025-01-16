@@ -182,26 +182,12 @@ int main(int argc, char* argv[]) {
             for (int client_socket : client_sockets) {
                 std::this_thread::sleep_for(std::chrono::microseconds(234));
                 send_all(client_socket, data, 1448, e, i);
-              
-                std::this_thread::sleep_for(std::chrono::microseconds(234));
                 send_all(client_socket, data, 1448, e, i);
-              
-                std::this_thread::sleep_for(std::chrono::microseconds(234));
                 send_all(client_socket, data, 1448, e, i);
-              
-                std::this_thread::sleep_for(std::chrono::microseconds(234));
                 send_all(client_socket, data, 1448, e, i);
-              
-                std::this_thread::sleep_for(std::chrono::microseconds(234));
                 send_all(client_socket, data, 1448, e, i);
-              
-                std::this_thread::sleep_for(std::chrono::microseconds(234));
                 send_all(client_socket, data, 1448, e, i);
-              
-                std::this_thread::sleep_for(std::chrono::microseconds(234));
                 send_all(client_socket, data, 1448, e, i);
-
-                std::this_thread::sleep_for(std::chrono::microseconds(17));
                 send_all(client_socket, data, 104, e, i);
             }
             // sum_interval2 += interval2;
