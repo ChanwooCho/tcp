@@ -6,6 +6,9 @@
 #include <cstdlib>
 #include <netinet/in.h>
 #include <netinet/tcp.h> 
+#include <thread>
+#include <iostream>
+#include <chrono> 
 
 unsigned long timeUs() {
     struct timeval te; 
