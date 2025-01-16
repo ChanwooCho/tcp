@@ -180,14 +180,11 @@ int main(int argc, char* argv[]) {
             memset(data, 'A' + i % 26, data_size);
             before1 = timeUs();
             for (int client_socket : client_sockets) {
+                for (int j = 0; j < 7; j++){
                 std::this_thread::sleep_for(std::chrono::microseconds(234));
                 send_all(client_socket, data, 1448, e, i);
-                send_all(client_socket, data, 1448, e, i);
-                send_all(client_socket, data, 1448, e, i);
-                send_all(client_socket, data, 1448, e, i);
-                send_all(client_socket, data, 1448, e, i);
-                send_all(client_socket, data, 1448, e, i);
-                send_all(client_socket, data, 1448, e, i);
+                }
+                std::this_thread::sleep_for(std::chrono::microseconds(17));
                 send_all(client_socket, data, 104, e, i);
             }
             // sum_interval2 += interval2;
