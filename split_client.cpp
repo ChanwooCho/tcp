@@ -154,10 +154,10 @@ int main(int argc, char *argv[]) {
             read_all(sock, buffer, 10240, e, i);
 
             for (int j = 0; j < 3; j++){
-                std::this_thread::sleep_for(std::chrono::microseconds(234 * 2));
+                // std::this_thread::sleep_for(std::chrono::microseconds(234 * 2));
                 send_all(sock, data, 1448 * 2, e, i);
             }
-            std::this_thread::sleep_for(std::chrono::microseconds(234 + 17));
+            // std::this_thread::sleep_for(std::chrono::microseconds(234 + 17));
             send_all(sock, data, 1448 + 104, e, i);
 
             interval1 = timeUs() - before1;
