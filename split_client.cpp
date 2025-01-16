@@ -59,7 +59,6 @@ ssize_t send_all(int sock, const char* data, size_t size, int e, int d) {
         }
         total_sent += bytes_sent;
     }
-    printf("==============================================================\n");
     return total_sent;
 }
 
@@ -165,6 +164,7 @@ int main(int argc, char *argv[]) {
 
             interval1 = timeUs() - before1;
             printf("iteration %d' interval = %d us\n\n", e, interval1);
+            printf("==============================================================\n");
         }
     }
     
