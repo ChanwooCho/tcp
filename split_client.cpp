@@ -161,7 +161,7 @@ int main(int argc, char *argv[]) {
             send_all(sock, data, 1448 + 104, e, i);
 
             interval1 = timeUs() - before1;
-            printf("iteration %d decoder %d: interval = %dus\n", e, i, interval);
+            printf("iteration %d decoder %d: interval = %dus\n", e, i, interval1);
             printf("==============================================================\n");
         }
     }
