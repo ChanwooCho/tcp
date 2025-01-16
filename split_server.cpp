@@ -181,25 +181,25 @@ int main(int argc, char* argv[]) {
             before1 = timeUs();
             for (int client_socket : client_sockets) {
                 std::this_thread::sleep_for(std::chrono::microseconds(234));
-                send_all(client_socket, data, 1024, e, i);
+                send_all(client_socket, data, 1448, e, i);
               
                 std::this_thread::sleep_for(std::chrono::microseconds(234));
-                send_all(client_socket, data, 1024, e, i);
+                send_all(client_socket, data, 1448, e, i);
               
                 std::this_thread::sleep_for(std::chrono::microseconds(234));
-                send_all(client_socket, data, 1024, e, i);
+                send_all(client_socket, data, 1448, e, i);
               
                 std::this_thread::sleep_for(std::chrono::microseconds(234));
-                send_all(client_socket, data, 1024, e, i);
+                send_all(client_socket, data, 1448, e, i);
               
                 std::this_thread::sleep_for(std::chrono::microseconds(234));
-                send_all(client_socket, data, 1024, e, i);
+                send_all(client_socket, data, 1448, e, i);
               
                 std::this_thread::sleep_for(std::chrono::microseconds(234));
-                send_all(client_socket, data, 1024, e, i);
+                send_all(client_socket, data, 1448, e, i);
               
                 std::this_thread::sleep_for(std::chrono::microseconds(234));
-                send_all(client_socket, data, 1024, e, i);
+                send_all(client_socket, data, 1448, e, i);
 
                 std::this_thread::sleep_for(std::chrono::microseconds(17));
                 send_all(client_socket, data, 104, e, i);
@@ -208,15 +208,7 @@ int main(int argc, char* argv[]) {
             // Read from all connected clients
 
             for (int client_socket : client_sockets) {
-                read_all(client_socket, buffer, 1024, e, i);
-                read_all(client_socket, buffer, 1024, e, i);
-                read_all(client_socket, buffer, 1024, e, i);
-                read_all(client_socket, buffer, 1024, e, i);
-                read_all(client_socket, buffer, 1024, e, i);
-                read_all(client_socket, buffer, 1024, e, i);
-                read_all(client_socket, buffer, 1024, e, i);
-                read_all(client_socket, buffer, 104, e, i);
-              
+                read_all(client_socket, buffer, 10240, e, i);
             }
             interval1 = timeUs() - before1;
             sum_interval1 += interval1;
