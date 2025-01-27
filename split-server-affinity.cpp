@@ -1,4 +1,3 @@
-#define _GNU_SOURCE  // sometimes needed for pthread_setaffinity_np
 #include <iostream>
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -11,41 +10,28 @@
 #include <sys/time.h>
 #include <thread>
 #include <chrono>
-#include <pthread.h>
-#include <sched.h>     // For cpu_set_t, CPU_SET, CPU_ZERO
+#include <sched.h>
 
-// --------------------------------------------------
-// Simple atomic counters (for thread indexing)
-// --------------------------------------------------
-static int g_sendThreadIndex = 0;
-
-// --------------------------------------------------
-// Utility to get current time in microseconds
-// --------------------------------------------------
 unsigned long timeUs() {
-    struct timeval te;
+    struct timeval te; 
     gettimeofday(&te, NULL);
-    return (unsigned long)te.tv_sec * 1000000LL + te.tv_usec;
+    return te.tv_sec * 1000000LL + te.tv_usec;
 }
 
-// --------------------------------------------------
-// read_all (unchanged)
-// --------------------------------------------------
 ssize_t read_all(int sock, char* buffer, size_t size, int e, int d) {
     size_t total_read = 0;
+    unsigned int before;
+    unsigned int interval;
+
     while (total_read < size) {
-        unsigned long before = timeUs();
+        before = timeUs();
         ssize_t bytes_read = read(sock, buffer + total_read, size - total_read);
-        unsigned long interval = timeUs() - before;
-
-        printf("iteration %d decoder %d: bytes_read = %zd, interval = %luus\n",
-               e, d, bytes_read, interval);
-
+        interval = timeUs() - before;
+        printf("iteration %d decoder %d: bytes_read = %d, interval = %dus\n", e, d, bytes_read, interval);
         if (bytes_read < 0) {
             perror("Read error");
             return -1;
         } else if (bytes_read == 0) {
-            // Connection closed
             break;
         }
         total_read += bytes_read;
@@ -53,19 +39,15 @@ ssize_t read_all(int sock, char* buffer, size_t size, int e, int d) {
     return total_read;
 }
 
-// --------------------------------------------------
-// send_all (unchanged)
-// --------------------------------------------------
 ssize_t send_all(int sock, const char* data, size_t size, int e, int d) {
     size_t total_sent = 0;
+    unsigned int before;
+    unsigned int interval;
     while (total_sent < size) {
-        unsigned long before = timeUs();
+        before = timeUs();
         ssize_t bytes_sent = send(sock, data + total_sent, size - total_sent, 0);
-        unsigned long interval = timeUs() - before;
-
-        printf("iteration %d decoder %d: bytes_sent = %zd, interval = %luus\n",
-               e, d, bytes_sent, interval);
-
+        interval = timeUs() - before;
+        printf("iteration %d decoder %d: bytes_sent = %d, interval = %dus\n", e, d, bytes_sent, interval);
         if (bytes_sent < 0) {
             perror("Send error");
             return -1;
@@ -75,206 +57,157 @@ ssize_t send_all(int sock, const char* data, size_t size, int e, int d) {
     return total_sent;
 }
 
-// --------------------------------------------------
-// Wrapper to pin the sending thread to CPU 1..3
-// (round-robin) then call send_all().
-// --------------------------------------------------
-void threadedSendAll(int sock, const char* data, size_t size, int e, int d) {
-    // Choose a CPU for sending in {1,2,3}
-    int myIndex  = __sync_fetch_and_add(&g_sendThreadIndex, 1);
-    int cpu_id   = 1 + (myIndex % 3);  // cycles through 1..3
-
-    // Build CPU set
-    cpu_set_t cpuset;
-    CPU_ZERO(&cpuset);
-    CPU_SET(cpu_id, &cpuset);
-
-    // Pin to chosen CPU
-    int rc = pthread_setaffinity_np(pthread_self(), sizeof(cpuset), &cpuset);
-    if (rc != 0) {
-        std::cerr << "[Send Thread] Error setting affinity to CPU "
-                  << cpu_id << ": " << rc << std::endl;
-    } else {
-        std::cout << "[Send Thread] pinned to CPU " 
-                  << cpu_id << std::endl;
-    }
-
-    // Actual send
-    send_all(sock, data, size, e, d);
-}
-
-// --------------------------------------------------
-// The "read thread" function:
-//  - pinned to CPU #0
-//  - loops reading from each client
-// --------------------------------------------------
-void readThreadFunc(std::vector<int> client_sockets,
-                    char* buffer,
-                    int data_size,
-                    int totalIterations)
-{
-    // Pin this thread to CPU #0
-    cpu_set_t cpuset;
-    CPU_ZERO(&cpuset);
-    CPU_SET(0, &cpuset);  // CPU #0
-    int rc = pthread_setaffinity_np(pthread_self(), sizeof(cpuset), &cpuset);
-    if (rc != 0) {
-        std::cerr << "[Read Thread] Error setting affinity to CPU 0: " 
-                  << rc << std::endl;
-    } else {
-        std::cout << "[Read Thread] pinned to CPU 0\n";
-    }
-
-    // For demonstration, let's do 'totalIterations' read cycles
-    // Each cycle: read from each client one block (e.g., 10240 bytes)
-    // This is just an example; adapt to your real logic.
-    for (int e = 0; e < totalIterations; e++) {
-        // We only have "decoder" index as e for printing. Or pass more if needed
-        for (int client_socket : client_sockets) {
-            // In your original code, you read 10240 each time
-            read_all(client_socket, buffer, 10240, e, /*decoder=*/0);
-        }
-    }
-
-    std::cout << "[Read Thread] finished all reading cycles\n";
-}
-
-// --------------------------------------------------
-// Main
-// --------------------------------------------------
 int main(int argc, char* argv[]) {
     if (argc != 5) {
-        std::cerr << "Usage: server <data_size(KB)> <# of decoders> "
-                  << "<# of clients> <port>\n";
+        std::cerr << "Usage: server <data_size(KB)> <# of decoders> <# of clients> <port>" << std::endl;
         return -1;
     }
 
-    // Parse command line
-    int data_size   = std::atoi(argv[1]) * 1024;
-    int decoders    = std::atoi(argv[2]);
-    int num_clients = std::atoi(argv[3]);
-    int port        = std::atoi(argv[4]);
+    int data_size = atoi(argv[1]) * 1024;
+    int iterations = atoi(argv[2]) * 2;
+    int num_clients = atoi(argv[3]);
+    int port = atoi(argv[4]);
 
-    // In your original code, you did "iterations = decoders * 2".
-    // We'll keep that logic or adapt:
-    int iterations = decoders * 2;
-
-    int server_fd, new_socket;
+    int server_fd;
     struct sockaddr_in address;
     int opt = 1;
-    socklen_t addrlen = sizeof(address);
+    std::vector<int> client_sockets;
 
-    // Prepare buffers
     char* buffer = new char[data_size];
-    char* data   = new char[data_size];
+    char* data = new char[data_size];
 
-    // Create socket
     if ((server_fd = socket(AF_INET, SOCK_STREAM, 0)) == 0) {
-        std::cerr << "Socket failed\n";
+        std::cerr << "Socket failed" << std::endl;
+        delete[] buffer;
+        delete[] data;
         return -1;
     }
 
-    if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT,
-                   &opt, sizeof(opt))) {
-        std::cerr << "setsockopt failed\n";
+    if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt))) {
+        std::cerr << "setsockopt failed" << std::endl;
         close(server_fd);
+        delete[] buffer;
+        delete[] data;
         return -1;
     }
 
-    address.sin_family      = AF_INET;
-    address.sin_addr.s_addr = INADDR_ANY;  // any local IP
-    address.sin_port        = htons(port);
+    address.sin_family = AF_INET;
+    address.sin_addr.s_addr = INADDR_ANY;
+    address.sin_port = htons(port);
 
     if (bind(server_fd, (struct sockaddr*)&address, sizeof(address)) < 0) {
-        std::cerr << "Bind failed\n";
+        std::cerr << "Bind failed" << std::endl;
         close(server_fd);
+        delete[] buffer;
+        delete[] data;
         return -1;
     }
 
     if (listen(server_fd, 10) < 0) {
-        std::cerr << "Listen failed\n";
+        std::cerr << "Listen failed" << std::endl;
         close(server_fd);
+        delete[] buffer;
+        delete[] data;
         return -1;
     }
 
-    std::cout << "Listening on port " << port << "\n";
+    std::cout << "Waiting for connections on port " << port << "..." << std::endl;
 
-    // Accept clients
-    std::vector<int> client_sockets;
-    while ((int)client_sockets.size() < num_clients) {
-        new_socket = accept(server_fd, (struct sockaddr*)&address, &addrlen);
-        if (new_socket < 0) {
-            std::cerr << "Accept failed\n";
-            close(server_fd);
-            return -1;
+    fd_set read_fds;
+    while (client_sockets.size() < num_clients) {
+        FD_ZERO(&read_fds);
+        FD_SET(server_fd, &read_fds);
+        int max_sd = server_fd;
+
+        int activity = select(max_sd + 1, &read_fds, NULL, NULL, NULL);
+
+        if (activity < 0 && errno != EINTR) {
+            std::cerr << "Select error" << std::endl;
+            break;
         }
-        std::cout << "Client connected\n";
-        client_sockets.push_back(new_socket);
-        std::cout << "Now " << client_sockets.size() 
-                  << " clients connected.\n";
+
+        if (FD_ISSET(server_fd, &read_fds)) {
+            int new_socket;
+            sockaddr_in address;
+            socklen_t addrlen = sizeof(address);
+            if ((new_socket = accept(server_fd, (struct sockaddr*)&address, &addrlen)) < 0) {
+                std::cerr << "Accept failed" << std::endl;
+                close(server_fd);
+                delete[] buffer;
+                delete[] data;
+                return -1;
+            }
+            client_sockets.push_back(new_socket);
+        }
     }
 
-    // ----------------------------------------------
-    // 1) Start ONE read thread pinned to CPU #0
-    // ----------------------------------------------
-    // Suppose we want it to handle 'X' read cycles total.
-    // This could match your main iteration loops, or be infinite, etc.
-    int readCycles = 50;  // or whatever you want
-    std::thread readThread(readThreadFunc,
-                           client_sockets,
-                           buffer,       // share the buffer
-                           data_size,    // for example
-                           readCycles);
+    std::cout << "Minimum " << num_clients << " clients connected. Starting main loop." << std::endl;
 
-    // ----------------------------------------------
-    // 2) Meanwhile, do sending in the main thread
-    //    or create sending threads as needed
-    // ----------------------------------------------
-    // Example: 50 iterations, each with "iterations" sub-steps
-    // That’s from your original code logic.
     for (int e = 0; e < 50; ++e) {
+        unsigned int sum_interval1 = 0;
         for (int i = 0; i < iterations; ++i) {
-            // Prepare data
-            memset(data, 'A' + (i % 26), data_size);
+            memset(data, 'A' + i % 26, data_size);
+            unsigned int before1 = timeUs();
 
-            // We create threads that call send_all pinned to CPU#1..#3
-            std::vector<std::thread> sendThreads;
-
-            for (int sockfd : client_sockets) {
-                // Example: 7 sends of 1448 + 1 send of 104
+            std::vector<std::thread> send_threads;
+            for (int client_idx = 0; client_idx < client_sockets.size(); ++client_idx) {
+                int client_socket = client_sockets[client_idx];
+                
+                // Create 7 threads for 1448-byte chunks
                 for (int j = 0; j < 7; j++) {
-                    sendThreads.emplace_back([=]() {
-                        threadedSendAll(sockfd, data, 1448, e, i);
+                    send_threads.emplace_back([client_socket, data, e, i, j, client_idx]() {
+                        // Calculate CPU core (0-3) based on combined index
+                        int cpu_core = (client_idx * 7 + j) % 4;
+                        cpu_set_t cpuset;
+                        CPU_ZERO(&cpuset);
+                        CPU_SET(cpu_core, &cpuset);
+                        
+                        if (sched_setaffinity(0, sizeof(cpu_set_t), &cpuset) == -1) {
+                            perror("sched_setaffinity failed");
+                        }
+                        send_all(client_socket, data, 1448, e, i);
                     });
                 }
-                sendThreads.emplace_back([=]() {
-                    threadedSendAll(sockfd, data, 104, e, i);
+
+                // Create thread for 104-byte chunk
+                send_threads.emplace_back([client_socket, data, e, i, client_idx]() {
+                    // Always use core 3 for final chunk
+                    cpu_set_t cpuset;
+                    CPU_ZERO(&cpuset);
+                    CPU_SET(3, &cpuset);
+                    
+                    if (sched_setaffinity(0, sizeof(cpu_set_t), &cpuset) == -1) {
+                        perror("sched_setaffinity failed");
+                    }
+                    send_all(client_socket, data, 104, e, i);
                 });
             }
 
-            // Join the send threads
-            for (auto &t : sendThreads) {
-                t.join();
+            // Wait for all send threads
+            for (auto& thread : send_threads) {
+                if (thread.joinable()) {
+                    thread.join();
+                }
             }
-        }
-        std::cout << "[Main] Completed iteration " << e << "\n";
-    }
 
-    // ----------------------------------------------
-    // 3) Wait for read thread to finish
-    // ----------------------------------------------
-    if (readThread.joinable()) {
-        readThread.join();
+            // Read phase remains sequential
+            for (int client_socket : client_sockets) {
+                read_all(client_socket, buffer, 10240, e, i);
+            }
+
+            sum_interval1 += timeUs() - before1;
+        }
+        printf("iteration %d' Time = %d ms\n\n", e, sum_interval1 / 1000);
     }
 
     // Cleanup
-    for (int s : client_sockets) {
-        close(s);
+    for (int client_socket : client_sockets) {
+        close(client_socket);
     }
     close(server_fd);
     delete[] buffer;
     delete[] data;
 
-    std::cout << "Server shutting down\n";
+    std::cout << "Connection closed" << std::endl;
     return 0;
 }
