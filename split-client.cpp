@@ -64,7 +64,7 @@ ssize_t send_all(int sock, const char* data, size_t size, int e, int d) {
 }
 
 int main(int argc, char *argv[]) {
-    if (argc != 4) {
+    if (argc != 5) {
         std::cerr << "Usage: client <data_size(KB)> <# of decoders> <# of packets per send_all> <ip_address:port>" << std::endl;
         return -1;
     }
