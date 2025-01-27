@@ -65,16 +65,17 @@ ssize_t send_all(int sock, const char* data, size_t size, int e, int d) {
 
 int main(int argc, char *argv[]) {
     if (argc != 4) {
-        std::cerr << "Usage: client <data_size(KB)> <# of decoders> <ip_address:port>" << std::endl;
+        std::cerr << "Usage: client <data_size(KB)> <# of decoders> <# of packets per send_all> <ip_address:port>" << std::endl;
         return -1;
     }
 
     // Parse data_size and iterations
     int data_size = std::atoi(argv[1]) * 1024; // Bytes
     int iterations = std::atoi(argv[2]) * 2; // attention layer + feedforward layer
-
+    int size_per_send = std::atoi(argv[3]) * 1448;
+    
     // Split the IP address and port
-    std::string input(argv[3]);
+    std::string input(argv[4]);
     std::size_t colon_pos = input.find(':');
     if (colon_pos == std::string::npos) {
         std::cerr << "Invalid argument format. Use: <ip address:port>" << std::endl;
@@ -146,14 +147,15 @@ int main(int argc, char *argv[]) {
             memset(data, 'A' + i % 26, data_size);
             before1 = timeUs();
             
-            read_all(sock, buffer, 10240, e, i);
+            read_all(sock, buffer, data_size, e, i);
 
-            for (int j = 0; j < 7; j++){
-                // std::this_thread::sleep_for(std::chrono::microseconds(234 * 2));
-                send_all(sock, data, 1448 * 1, e, i);
+            size_t total_read = 0;
+            while (total_read < data_size) {
+                size_t remaining_data = data_size - total_read;
+                size_t send_size = (remaining_data >= size_per_send) ? size_per_send : remaining_data;
+            
+                total_read += send_all(sock, data + total_read, send_size, e, i);
             }
-            // std::this_thread::sleep_for(std::chrono::microseconds(234 + 17));
-            send_all(sock, data, 104, e, i);
 
             interval1 = timeUs() - before1;
             printf("iteration %d decoder %d: interval = %dus\n", e, i, interval1);
