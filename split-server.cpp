@@ -60,16 +60,17 @@ ssize_t send_all(int sock, const char* data, size_t size, int e, int d) {
 }
 
 int main(int argc, char* argv[]) {
-    if (argc != 5) {
-        std::cerr << "Usage: server <data_size(KB)> <# of decoders> <# of clients> <port>" << std::endl;
+    if (argc != 6) {
+        std::cerr << "Usage: server <data_size(KB)> <# of decoders> <# of packets per send_all> <# of clients> <port>" << std::endl;
         return -1;
     }
 
     // Extract command-line arguments
     int data_size = atoi(argv[1]) * 1024; // Convert the data size argument to an integer
     int iterations = atoi(argv[2]) * 2;   // Convert the iterations argument to an integer
-    int num_clients = atoi(argv[3]);      // Number of clients to wait for
-    int port = atoi(argv[4]);             // Convert the port argument to an integer
+    int size_per_send = std::atoi(argv[3]) * 1448;
+    int num_clients = atoi(argv[4]);      // Number of clients to wait for
+    int port = atoi(argv[5]);             // Convert the port argument to an integer
 
     int server_fd, new_socket;
     struct sockaddr_in address;
@@ -89,14 +90,6 @@ int main(int argc, char* argv[]) {
         delete[] data;
         return -1;
     }
-    // disable nagle algorithm
-    // int flag = 1;
-    // if (setsockopt(server_fd, IPPROTO_TCP, TCP_NODELAY, &flag, sizeof(flag)) < 0) {
-    //     perror("setsockopt(TCP_NODELAY) failed");
-    // }
-    // int buff_size = 1 * 1024 * 1024; // 1MB, for example
-    // setsockopt(server_fd, SOL_SOCKET, SO_SNDBUF, &buff_size, sizeof(buff_size));
-    // setsockopt(server_fd, SOL_SOCKET, SO_RCVBUF, &buff_size, sizeof(buff_size));
 
     // Attach socket to the port
     if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt))) {
@@ -188,12 +181,13 @@ int main(int argc, char* argv[]) {
             memset(data, 'A' + i % 26, data_size);
             before1 = timeUs();
             for (int client_socket : client_sockets) {
-                for (int j = 0; j < 7; j++){
-                // std::this_thread::sleep_for(std::chrono::microseconds(234 * 2));
-                send_all(client_socket, data, 1448, e, i);
+                size_t total_read = 0;
+                while (total_read < data_size) {
+                    size_t remaining_data = data_size - total_read;
+                    size_t send_size = (remaining_data >= size_per_send) ? size_per_send : remaining_data;
+                
+                    total_read += send_all(client_socket, data + total_read, send_size, e, i);
                 }
-                // std::this_thread::sleep_for(std::chrono::microseconds(234 + 17));
-                send_all(client_socket, data, 104, e, i);
             }
             // sum_interval2 += interval2;
             // Read from all connected clients
