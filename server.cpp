@@ -198,8 +198,8 @@ int main(int argc, char* argv[]) {
             // printf("current recieve data = %c\n", buffer[data_size - 1]);
             interval1 = timeUs() - before1;
             sum_interval1 += interval1;
-            printf("iteration %d decoder %d: interval = %dus\n", e, i, interval1);
-            printf("==============================================================\n");
+            // printf("iteration %d decoder %d: interval = %dus\n", e, i, interval1);
+            // printf("==============================================================\n");
         }
         // printf("iteration %d's send time = %d ms, read time = %d ms\n", e, sum_interval2 / 1000, sum_interval3 / 1000);
         printf("iteration %d' Time = %d ms\n\n", e, sum_interval1 / 1000);
