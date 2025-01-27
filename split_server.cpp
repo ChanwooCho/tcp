@@ -11,6 +11,41 @@
 #include <thread>
 #include <iostream>
 #include <chrono> 
+#include <sched.h>
+
+// For Android Core Affinity
+#if defined(__ANDROID__)
+    #if defined(__x86_64__)
+    #define __NR_sched_setaffinity 203
+    #elif defined(__arm__)
+    #define __NR_sched_setaffinity 241
+    #elif defined(__aarch64__)
+    #define __NR_sched_setaffinity 122
+    #endif
+    #define CPU_SETSIZE 1024
+    #define __NCPUBITS (8 * sizeof (unsigned long))
+    typedef struct {
+        unsigned long __bits[CPU_SETSIZE / __NCPUBITS];
+    } cpu_set_t;
+
+    void CPU_ZERO(cpu_set_t *set) {
+        memset(set, 0, sizeof(cpu_set_t));
+    }
+
+    void CPU_SET(int cpu, cpu_set_t *set) {
+        set->__bits[cpu / __NCPUBITS] |= (1UL << (cpu % __NCPUBITS));
+    }
+
+    // Define sched_setaffinity using syscall
+    int sched_setaffinity(pid_t pid, size_t cpusetsize, const cpu_set_t *mask) {
+        int result = syscall(__NR_sched_setaffinity, pid, cpusetsize, mask);
+        if (result != 0) {
+            errno = result;
+            return -1;
+        }
+        return 0;
+    }
+#endif
 
 unsigned long timeUs() {
     struct timeval te; 
@@ -162,6 +197,13 @@ int main(int argc, char* argv[]) {
     }
 
     std::cout << "Minimum " << num_clients << " clients connected. Starting main loop." << std::endl;
+
+    // CORE AFFINITY
+    int cpu_index = 3; 
+    cpu_set_t cpuset;
+    CPU_ZERO(&cpuset);
+    CPU_SET(cpu_index, &cpuset);
+    sched_setaffinity(0, sizeof(cpuset), &cpuset);
 
     unsigned int before1;
     unsigned int before2;
