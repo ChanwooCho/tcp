@@ -128,11 +128,11 @@ int main(int argc, char *argv[]) {
     std::cout << "Connected to server at " << ip_address << ":" << port << std::endl;
 
     // CORE AFFINITY
-    int cpu_index = 7; 
-    cpu_set_t cpuset;
-    CPU_ZERO(&cpuset);
-    CPU_SET(cpu_index, &cpuset);
-    sched_setaffinity(0, sizeof(cpuset), &cpuset);
+    // int cpu_index = 7; 
+    // cpu_set_t cpuset;
+    // CPU_ZERO(&cpuset);
+    // CPU_SET(cpu_index, &cpuset);
+    // sched_setaffinity(0, sizeof(cpuset), &cpuset);
 
     unsigned int before1;
     unsigned int before2;
