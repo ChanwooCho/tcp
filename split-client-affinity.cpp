@@ -205,10 +205,10 @@ int main(int argc, char *argv[]) {
             const unsigned start_time = timeUs();
             
             // Generate test data
-            memset(data, 'A' + dec % 26, data_size);
+            memset(data, 'A' + i % 26, data_size);
 
             // Read phase
-            read_all(sock, buffer, 10240, epoch, dec);
+            read_all(sock, buffer, 10240, e, i);
             
             std::vector<std::future<void>> send_futures;
             // Parallel send phase
