@@ -214,7 +214,7 @@ int main(int argc, char *argv[]) {
            for (int j = 0; j < 7; ++j) {
                     send_futures.emplace_back(pool.enqueue(
                         [client_socket, data, e, i] {
-                            send_all(client_socket, data, 1448, e, i);
+                            send_all(sock, data, 1448, e, i);
                         }
                     ));
                 }
@@ -222,7 +222,7 @@ int main(int argc, char *argv[]) {
             // Submit final 104 byte chunk
             send_futures.emplace_back(pool.enqueue(
                 [client_socket, data, e, i] {
-                    send_all(client_socket, data, 104, e, i);
+                    send_all(sock, data, 104, e, i);
                 }
             ));
 
