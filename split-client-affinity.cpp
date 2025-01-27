@@ -199,8 +199,8 @@ int main(int argc, char *argv[]) {
     char* data = new char[data_size];
 
     // Main loop
-    for(int epoch = 0; epoch < 50; ++epoch) {
-        for(int dec = 0; dec < iterations; ++dec) {
+    for(int e = 0; e < 50; ++e) {
+        for(int i = 0; i < iterations; ++i) {
             const unsigned start_time = timeUs();
             
             // Generate test data
@@ -213,7 +213,7 @@ int main(int argc, char *argv[]) {
             // Parallel send phase
            for (int j = 0; j < 7; ++j) {
                     send_futures.emplace_back(pool.enqueue(
-                        [client_socket, data, e, i] {
+                        [sock, data, e, i] {
                             send_all(sock, data, 1448, e, i);
                         }
                     ));
@@ -221,7 +221,7 @@ int main(int argc, char *argv[]) {
                 
             // Submit final 104 byte chunk
             send_futures.emplace_back(pool.enqueue(
-                [client_socket, data, e, i] {
+                [sock, data, e, i] {
                     send_all(sock, data, 104, e, i);
                 }
             ));
