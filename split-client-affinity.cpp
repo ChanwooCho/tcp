@@ -76,92 +76,70 @@ ssize_t send_all(int sock, const char* data, size_t size, int e, int d) {
     return total_sent;
 }
 
-// Thread pool implementation
 class ThreadPool {
 public:
-    ThreadPool(size_t num_threads, const std::vector<int>& cpu_affinity) 
+    ThreadPool(size_t threads, const std::vector<int>& cpu_affinity) 
         : stop(false) {
-        if(num_threads != cpu_affinity.size()) {
-            throw std::runtime_error("CPU affinity list must match thread count");
-        }
-
-        for(size_t i = 0; i < num_threads; ++i) {
+        for(size_t i = 0; i < threads; ++i) {
             workers.emplace_back([this, i, cpu_affinity] {
                 // Set CPU affinity
-                cpu_set_t cpuset;
-                CPU_ZERO(&cpuset);
-                CPU_SET(cpu_affinity[i], &cpuset);
-                if(sched_setaffinity(0, sizeof(cpu_set_t), &cpuset) == -1) {
-                    perror("sched_setaffinity failed");
+                if(!cpu_affinity.empty()) {
+                    cpu_set_t cpuset;
+                    CPU_ZERO(&cpuset);
+                    CPU_SET(cpu_affinity[i % cpu_affinity.size()], &cpuset);
+                    if(sched_setaffinity(0, sizeof(cpu_set_t), &cpuset) == -1) {
+                        perror("sched_setaffinity failed");
+                    }
                 }
 
-                // Worker loop
-                while(true) {
+                for(;;) {
                     std::function<void()> task;
                     {
                         std::unique_lock<std::mutex> lock(queue_mutex);
-                        condition.wait(lock, [this] { 
-                            return stop || !tasks.empty(); 
-                        });
-
+                        condition.wait(lock, [this]{ return stop || !tasks.empty(); });
                         if(stop && tasks.empty()) return;
-
                         task = std::move(tasks.front());
                         tasks.pop();
                     }
-
                     task();
-                    {
-                        std::lock_guard<std::mutex> lock(completion_mutex);
-                        --outstanding_tasks;
-                        if(outstanding_tasks == 0) {
-                            completion_condition.notify_all();
-                        }
-                    }
                 }
             });
         }
     }
 
     template<class F>
-    void enqueue(F&& f) {
+    auto enqueue(F&& f) -> std::future<decltype(f())> {
+        using return_type = decltype(f());
+        auto task = std::make_shared<std::packaged_task<return_type()>>(
+            std::forward<F>(f)
+        );
+        
+        std::future<return_type> res = task->get_future();
         {
-            std::lock_guard<std::mutex> lock(queue_mutex);
-            tasks.emplace(std::forward<F>(f));
-            ++outstanding_tasks;
+            std::unique_lock<std::mutex> lock(queue_mutex);
+            if(stop)
+                throw std::runtime_error("enqueue on stopped ThreadPool");
+            tasks.emplace([task](){ (*task)(); });
         }
         condition.notify_one();
-    }
-
-    void wait_completion() {
-        std::unique_lock<std::mutex> lock(completion_mutex);
-        completion_condition.wait(lock, [this] {
-            return outstanding_tasks == 0;
-        });
+        return res;
     }
 
     ~ThreadPool() {
         {
-            std::lock_guard<std::mutex> lock(queue_mutex);
+            std::unique_lock<std::mutex> lock(queue_mutex);
             stop = true;
         }
         condition.notify_all();
-        for(std::thread &worker : workers) {
-            worker.join();
-        }
+        for(std::thread &worker: workers)
+            if(worker.joinable()) worker.join();
     }
 
 private:
     std::vector<std::thread> workers;
     std::queue<std::function<void()>> tasks;
-    
     std::mutex queue_mutex;
-    std::mutex completion_mutex;
-    
     std::condition_variable condition;
-    std::condition_variable completion_condition;
-    
-    std::atomic<uint32_t> outstanding_tasks{0};
     bool stop;
 };
 
@@ -212,9 +190,9 @@ int main(int argc, char *argv[]) {
 
     std::cout << "Connected to " << ip << ":" << port << std::endl;
 
-    // Create thread pool pinned to CPUs 0-3
-    std::vector<int> cpu_affinity = {0, 1, 2, 3};
-    ThreadPool pool(4, cpu_affinity);
+    // Configure CPU affinity (adjust based on your device's cores)
+    const std::vector<int> cpu_affinity = {0, 1, 2, 3}; // Use 4 cores
+    ThreadPool pool(cpu_affinity.size(), cpu_affinity);
 
     // Buffers
     char* buffer = new char[data_size];
@@ -230,17 +208,27 @@ int main(int argc, char *argv[]) {
 
             // Read phase
             read_all(sock, buffer, 10240, epoch, dec);
-
+            
+            std::vector<std::future<void>> send_futures;
             // Parallel send phase
-            for(int j = 0; j < 8; ++j) {
-                const size_t send_size = (j < 7) ? 1448 : 104;
-                pool.enqueue([=] {
-                    send_all(sock, data, send_size, epoch, dec);
-                });
-            }
+           for (int j = 0; j < 7; ++j) {
+                    send_futures.emplace_back(pool.enqueue(
+                        [client_socket, data, e, i] {
+                            send_all(client_socket, data, 1448, e, i);
+                        }
+                    ));
+                }
+                
+            // Submit final 104 byte chunk
+            send_futures.emplace_back(pool.enqueue(
+                [client_socket, data, e, i] {
+                    send_all(client_socket, data, 104, e, i);
+                }
+            ));
 
-            // Wait for all sends
-            pool.wait_completion();
+            for (auto& future : send_futures) {
+                future.wait();
+            }
 
             // Statistics
             const unsigned elapsed = timeUs() - start_time;
