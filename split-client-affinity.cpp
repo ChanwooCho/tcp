@@ -14,6 +14,7 @@
 #include <condition_variable>
 #include <atomic>
 #include <sched.h>
+#include <future>
 #include <sys/time.h>
 
 // Utility function for microsecond timestamps
