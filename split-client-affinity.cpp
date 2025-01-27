@@ -232,7 +232,7 @@ int main(int argc, char *argv[]) {
 
             // Statistics
             const unsigned elapsed = timeUs() - start_time;
-            std::cout << "Epoch " << epoch << " Decoder " << dec 
+            std::cout << "Epoch " << e << " Decoder " << i 
                       << " completed in " << elapsed << "μs\n"
                       << std::string(60, '-') << "\n";
         }
