@@ -165,7 +165,7 @@ int main(int argc, char* argv[]) {
     std::cout << "Minimum " << num_clients << " clients connected. Starting main loop." << std::endl;
 
     // CORE AFFINITY
-    int cpu_index = 3; 
+    int cpu_index = 7; 
     cpu_set_t cpuset;
     CPU_ZERO(&cpuset);
     CPU_SET(cpu_index, &cpuset);
