@@ -14,184 +14,246 @@
 #include <condition_variable>
 #include <atomic>
 #include <sched.h>
+#include <sys/time.h>
 
+// Utility function for microsecond timestamps
 unsigned long timeUs() {
     struct timeval te; 
     gettimeofday(&te, NULL);
     return te.tv_sec * 1000000LL + te.tv_usec;
 }
 
-unsigned int min_latency;
+unsigned int min_latency = UINT_MAX;
 
-// Thread pool structure
-struct ThreadInfo {
-    std::queue<std::function<void()>> tasks;
-    std::mutex queue_mutex;
-    std::condition_variable condition;
-    bool stop = false;
-    int cpu_id;
-};
-
-struct ThreadPool {
-    std::vector<std::thread> workers;
-    std::vector<ThreadInfo> thread_info;
-    std::atomic<int> task_count{0};
-    std::mutex completion_mutex;
-    std::condition_variable completion_cv;
-
-    ThreadPool(int num_threads) {
-        thread_info.resize(num_threads);
-        for(int i = 0; i < num_threads; ++i) {
-            thread_info[i].cpu_id = i;
-            workers.emplace_back([this, i] { worker_thread(i); });
+// Network I/O functions
+ssize_t read_all(int sock, char* buffer, size_t size, int e, int d) {
+    size_t total_read = 0;
+    unsigned int before;
+    unsigned int interval;
+    unsigned int is_first = 1;
+    
+    while (total_read < size) {
+        before = timeUs();
+        ssize_t bytes_read = read(sock, buffer + total_read, size - total_read);
+        interval = timeUs() - before;
+        
+        if (is_first && min_latency > interval) {
+            min_latency = interval;
         }
+        is_first = 0;
+        
+        printf("READ  [iter %d][dec %d]: %zd bytes, %uus\n", e, d, bytes_read, interval);
+
+        if (bytes_read < 0) {
+            perror("Read error");
+            return -1;
+        } else if (bytes_read == 0) {
+            break;
+        }
+        total_read += bytes_read;
     }
+    return total_read;
+}
 
-    ~ThreadPool() {
-        for(auto& info : thread_info) {
-            {
-                std::unique_lock<std::mutex> lock(info.queue_mutex);
-                info.stop = true;
-            }
-            info.condition.notify_all();
+ssize_t send_all(int sock, const char* data, size_t size, int e, int d) {
+    size_t total_sent = 0;
+    unsigned int before;
+    unsigned int interval;
+    
+    while (total_sent < size) {
+        before = timeUs();
+        ssize_t bytes_sent = send(sock, data + total_sent, size - total_sent, 0);
+        interval = timeUs() - before;
+        
+        printf("SEND  [iter %d][dec %d]: %zd bytes, %uus\n", e, d, bytes_sent, interval);
+
+        if (bytes_sent < 0) {
+            perror("Send error");
+            return -1;
         }
-        for(auto& worker : workers) {
-            if(worker.joinable()) worker.join();
-        }
+        total_sent += bytes_sent;
     }
+    return total_sent;
+}
 
-    void worker_thread(int thread_idx) {
-        cpu_set_t cpuset;
-        CPU_ZERO(&cpuset);
-        CPU_SET(thread_info[thread_idx].cpu_id, &cpuset);
-        if(sched_setaffinity(0, sizeof(cpu_set_t), &cpuset) == -1) {
-            perror("sched_setaffinity failed");
+// Thread pool implementation
+class ThreadPool {
+public:
+    ThreadPool(size_t num_threads, const std::vector<int>& cpu_affinity) 
+        : stop(false) {
+        if(num_threads != cpu_affinity.size()) {
+            throw std::runtime_error("CPU affinity list must match thread count");
         }
 
-        while(true) {
-            std::function<void()> task;
-            {
-                std::unique_lock<std::mutex> lock(thread_info[thread_idx].queue_mutex);
-                thread_info[thread_idx].condition.wait(lock, [&] {
-                    return !thread_info[thread_idx].tasks.empty() || thread_info[thread_idx].stop;
-                });
+        for(size_t i = 0; i < num_threads; ++i) {
+            workers.emplace_back([this, i, cpu_affinity] {
+                // Set CPU affinity
+                cpu_set_t cpuset;
+                CPU_ZERO(&cpuset);
+                CPU_SET(cpu_affinity[i], &cpuset);
+                if(sched_setaffinity(0, sizeof(cpu_set_t), &cpuset) == -1) {
+                    perror("sched_setaffinity failed");
+                }
 
-                if(thread_info[thread_idx].stop) return;
+                // Worker loop
+                while(true) {
+                    std::function<void()> task;
+                    {
+                        std::unique_lock<std::mutex> lock(queue_mutex);
+                        condition.wait(lock, [this] { 
+                            return stop || !tasks.empty(); 
+                        });
 
-                task = std::move(thread_info[thread_idx].tasks.front());
-                thread_info[thread_idx].tasks.pop();
-            }
+                        if(stop && tasks.empty()) return;
 
-            task();
-            
-            if(--task_count == 0) {
-                completion_cv.notify_one();
-            }
+                        task = std::move(tasks.front());
+                        tasks.pop();
+                    }
+
+                    task();
+                    {
+                        std::lock_guard<std::mutex> lock(completion_mutex);
+                        --outstanding_tasks;
+                        if(outstanding_tasks == 0) {
+                            completion_condition.notify_all();
+                        }
+                    }
+                }
+            });
         }
     }
 
     template<class F>
-    void enqueue(F&& f, int cpu_id) {
-        auto& info = thread_info[cpu_id];
+    void enqueue(F&& f) {
         {
-            std::unique_lock<std::mutex> lock(info.queue_mutex);
-            info.tasks.emplace(std::forward<F>(f));
+            std::lock_guard<std::mutex> lock(queue_mutex);
+            tasks.emplace(std::forward<F>(f));
+            ++outstanding_tasks;
         }
-        ++task_count;
-        info.condition.notify_one();
+        condition.notify_one();
     }
 
     void wait_completion() {
         std::unique_lock<std::mutex> lock(completion_mutex);
-        completion_cv.wait(lock, [this] { return task_count == 0; });
-    }
-};
-
-// Rest of your existing functions (read_all, send_all) remain the same
-// [Keep the original read_all and send_all implementations unchanged]
-
-int main(int argc, char *argv[]) {
- if (argc != 4) {
-        std::cerr << "Usage: client <data_size(KB)> <# of decoders> <ip_address:port>" << std::endl;
-        return -1;
+        completion_condition.wait(lock, [this] {
+            return outstanding_tasks == 0;
+        });
     }
 
-    // Parse data_size and iterations
-    int data_size = std::atoi(argv[1]) * 1024; // Bytes
-    int iterations = std::atoi(argv[2]) * 2; // attention layer + feedforward layer
-
-    // Split the IP address and port
-    std::string input(argv[3]);
-    std::size_t colon_pos = input.find(':');
-    if (colon_pos == std::string::npos) {
-        std::cerr << "Invalid argument format. Use: <ip address:port>" << std::endl;
-        return -1;
-    }
-
-    std::string ip_address = input.substr(0, colon_pos);
-    int port = std::atoi(input.substr(colon_pos + 1).c_str());
-
-    int sock = 0;
-    struct sockaddr_in serv_addr;
-    char *buffer = new char[data_size];
-    char *data = new char[data_size];
-
-    // Create socket
-    if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
-        std::cerr << "Socket creation error" << std::endl;
-        delete[] buffer;
-        delete[] data;
-        return -1;
-    }
-    serv_addr.sin_family = AF_INET;
-    serv_addr.sin_port = htons(port);
-
-    // Convert IPv4 and IPv6 addresses from text to binary form
-    if (inet_pton(AF_INET, ip_address.c_str(), &serv_addr.sin_addr) <= 0) {
-        std::cerr << "Invalid address/ Address not supported" << std::endl;
-        delete[] buffer;
-        delete[] data;
-        return -1;
-    }
-
-    // Connect to server
-    if (connect(sock, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0) {
-        std::cerr << "Connection Failed" << std::endl;
-        delete[] buffer;
-        delete[] data;
-        return -1;
-    }
-
-    std::cout << "Connected to server at " << ip_address << ":" << port << std::endl;
-    
-    ThreadPool pool(4);
-
-    unsigned int before1;
-    unsigned int interval1;
-    for (int e = 0; e < 50; ++e) {
-        for (int i = 0; i < iterations; ++i) {
-            memset(data, 'A' + i % 26, data_size);
-            before1 = timeUs();
-            
-            read_all(sock, buffer, 10240, e, i);
-
-            // Submit all send tasks to the thread pool
-            for (int j = 0; j < 8; ++j) {
-                size_t send_size = (j < 7) ? 1448 * 1 : 104;
-                int target_cpu = j % 4;
-                pool.enqueue([=] {
-                    send_all(sock, data, send_size, e, i);
-                }, target_cpu);
-            }
-
-            // Wait for all tasks to complete
-            pool.wait_completion();
-
-            interval1 = timeUs() - before1;
-            printf("iteration %d decoder %d: interval = %dus\n", e, i, interval1);
-            printf("==============================================================\n");
+    ~ThreadPool() {
+        {
+            std::lock_guard<std::mutex> lock(queue_mutex);
+            stop = true;
+        }
+        condition.notify_all();
+        for(std::thread &worker : workers) {
+            worker.join();
         }
     }
 
-    // [Rest of cleanup code remains unchanged]
+private:
+    std::vector<std::thread> workers;
+    std::queue<std::function<void()>> tasks;
+    
+    std::mutex queue_mutex;
+    std::mutex completion_mutex;
+    
+    std::condition_variable condition;
+    std::condition_variable completion_condition;
+    
+    std::atomic<uint32_t> outstanding_tasks{0};
+    bool stop;
+};
+
+int main(int argc, char *argv[]) {
+    if(argc != 4) {
+        std::cerr << "Usage: " << argv[0] 
+                  << " <data_size_KB> <num_decoders> <ip:port>\n";
+        return 1;
+    }
+
+    // Configuration
+    const int data_size = std::atoi(argv[1]) * 1024;
+    const int iterations = std::atoi(argv[2]) * 2;
+    const std::string ip_port(argv[3]);
+
+    // Parse IP/port
+    size_t colon = ip_port.find(':');
+    if(colon == std::string::npos) {
+        std::cerr << "Invalid IP:port format\n";
+        return 1;
+    }
+    std::string ip = ip_port.substr(0, colon);
+    int port = std::stoi(ip_port.substr(colon+1));
+
+    // Create socket
+    int sock = socket(AF_INET, SOCK_STREAM, 0);
+    if(sock < 0) {
+        perror("Socket creation failed");
+        return 1;
+    }
+
+    // Connect to server
+    sockaddr_in serv_addr{};
+    serv_addr.sin_family = AF_INET;
+    serv_addr.sin_port = htons(port);
+    
+    if(inet_pton(AF_INET, ip.c_str(), &serv_addr.sin_addr) <= 0) {
+        std::cerr << "Invalid address\n";
+        close(sock);
+        return 1;
+    }
+
+    if(connect(sock, (sockaddr*)&serv_addr, sizeof(serv_addr)) < 0) {
+        perror("Connection failed");
+        close(sock);
+        return 1;
+    }
+
+    std::cout << "Connected to " << ip << ":" << port << std::endl;
+
+    // Create thread pool pinned to CPUs 0-3
+    std::vector<int> cpu_affinity = {0, 1, 2, 3};
+    ThreadPool pool(4, cpu_affinity);
+
+    // Buffers
+    char* buffer = new char[data_size];
+    char* data = new char[data_size];
+
+    // Main loop
+    for(int epoch = 0; epoch < 50; ++epoch) {
+        for(int dec = 0; dec < iterations; ++dec) {
+            const unsigned start_time = timeUs();
+            
+            // Generate test data
+            memset(data, 'A' + dec % 26, data_size);
+
+            // Read phase
+            read_all(sock, buffer, 10240, epoch, dec);
+
+            // Parallel send phase
+            for(int j = 0; j < 8; ++j) {
+                const size_t send_size = (j < 7) ? 1448 : 104;
+                pool.enqueue([=] {
+                    send_all(sock, data, send_size, epoch, dec);
+                });
+            }
+
+            // Wait for all sends
+            pool.wait_completion();
+
+            // Statistics
+            const unsigned elapsed = timeUs() - start_time;
+            std::cout << "Epoch " << epoch << " Decoder " << dec 
+                      << " completed in " << elapsed << "μs\n"
+                      << std::string(60, '-') << "\n";
+        }
+    }
+
+    // Cleanup
+    close(sock);
+    delete[] buffer;
+    delete[] data;
+
+    return 0;
 }
