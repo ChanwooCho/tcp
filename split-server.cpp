@@ -193,7 +193,7 @@ int main(int argc, char* argv[]) {
             // Read from all connected clients
 
             for (int client_socket : client_sockets) {
-                read_all(client_socket, buffer, 10240, e, i);
+                read_all(client_socket, buffer, data_size, e, i);
             }
             interval1 = timeUs() - before1;
             sum_interval1 += interval1;
