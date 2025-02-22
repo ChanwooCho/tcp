@@ -29,10 +29,7 @@ ssize_t read_all(int sock, char* buffer, size_t size, int e, int d) {
         if (bytes_read < 0) {
             perror("Read error");
             return -1;
-        } else if (bytes_read == 0) {
-            // Connection closed
-            break;
-        }
+        } 
         total_read += bytes_read;
     }
     return total_read;
