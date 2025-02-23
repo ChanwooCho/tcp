@@ -1,24 +1,55 @@
 #include <iostream>
-#include <thread>
-#include <cstring>
-#include <unistd.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
+#include <unistd.h>
+#include <cstring>
 #include <cstdlib>
 #include <netinet/in.h>
 #include <netinet/tcp.h>
-#include <sched.h>
+#include <thread>
+#include <vector>
+#include <pthread.h>
 #include <sys/time.h>
+#include <string>
 
-// Function to get current time in microseconds
+// Returns current time in microseconds
 unsigned long timeUs() {
-    struct timeval te;
+    struct timeval te; 
     gettimeofday(&te, NULL);
     return te.tv_sec * 1000000LL + te.tv_usec;
 }
 
-// Modified send_all function with extra parameters for logging (thread_id, core_id)
-ssize_t send_all(int sock, const char* data, size_t size, int thread_id, int core_id) {
+unsigned int min_latency;
+
+ssize_t read_all(int sock, char* buffer, size_t size, int e, int d) {
+    size_t total_read = 0;
+    unsigned int before;
+    unsigned int interval;
+    bool is_first = true;
+    
+    while (total_read < size) {
+        before = timeUs();
+        ssize_t bytes_read = read(sock, buffer + total_read, size - total_read);
+        interval = timeUs() - before;
+        if (min_latency > interval && is_first) {
+            min_latency = interval;
+        }
+        is_first = false;
+        printf("iteration %d decoder %d: bytes_read = %zd, interval = %dus\n", e, d, bytes_read, interval);
+
+        if (bytes_read < 0) {
+            perror("Read error");
+            return -1;
+        } else if (bytes_read == 0) {
+            // Connection closed
+            break;
+        }
+        total_read += bytes_read;
+    }
+    return total_read;
+}
+
+ssize_t send_all(int sock, const char* data, size_t size, int e, int d) {
     size_t total_sent = 0;
     unsigned int before;
     unsigned int interval;
@@ -26,7 +57,7 @@ ssize_t send_all(int sock, const char* data, size_t size, int thread_id, int cor
         before = timeUs();
         ssize_t bytes_sent = send(sock, data + total_sent, size - total_sent, 0);
         interval = timeUs() - before;
-        printf("Thread %d on core %d: bytes_sent = %zd, interval = %dus\n", thread_id, core_id, bytes_sent, interval);
+        printf("iteration %d decoder %d: bytes_sent = %zd, interval = %dus\n", e, d, bytes_sent, interval);
         if (bytes_sent < 0) {
             perror("Send error");
             return -1;
@@ -36,91 +67,111 @@ ssize_t send_all(int sock, const char* data, size_t size, int thread_id, int cor
     return total_sent;
 }
 
-// Function to be run in each thread.
-// It binds the thread to a specific core and then calls send_all.
-void send_thread_func(int sock, const char* data, size_t size, int core_id, int thread_id) {
-    // Set CPU affinity for this thread to the specified core
-    cpu_set_t cpuset;
-    CPU_ZERO(&cpuset);
-    CPU_SET(core_id, &cpuset);
-    if (sched_setaffinity(0, sizeof(cpuset), &cpuset) != 0) {
-        perror("sched_setaffinity");
-    }
-    printf("Thread %d is bound to core %d\n", thread_id, core_id);
-    // Call send_all for 2560 bytes
-    send_all(sock, data, size, thread_id, core_id);
-}
-
 int main(int argc, char *argv[]) {
-    if (argc != 3) {
-        std::cerr << "Usage: client <ip_address:port> <data_size_per_thread_in_bytes>" << std::endl;
+    if (argc != 4) {
+        std::cerr << "Usage: client <data_size(Bytes)> <# of decoders> <ip_address:port>" << std::endl;
         return -1;
     }
 
-    // Parse IP and port
-    std::string input(argv[1]);
+    // Parse the data size and number of decoders.
+    int data_size = std::atoi(argv[1]); // total bytes to send
+    int decoders = std::atoi(argv[2]);  // number of decoders (this was used earlier to calculate iterations)
+    int iterations = decoders * 2;       // still using the same inner loop count
+
+    // Parse the IP address and port from the input argument
+    std::string input(argv[3]);
     std::size_t colon_pos = input.find(':');
     if (colon_pos == std::string::npos) {
-        std::cerr << "Invalid argument format. Use: <ip_address:port>" << std::endl;
+        std::cerr << "Invalid argument format. Use: <ip address:port>" << std::endl;
         return -1;
     }
     std::string ip_address = input.substr(0, colon_pos);
     int port = std::atoi(input.substr(colon_pos + 1).c_str());
 
-    // Data size per thread; here we expect 2560 bytes per thread
-    int send_size = std::atoi(argv[2]);
-    if (send_size != 2560) {
-        std::cerr << "This example is set up for 2560 bytes per thread." << std::endl;
-        return -1;
-    }
+    int sock = 0;
+    struct sockaddr_in serv_addr;
+    char *buffer = new char[data_size];
+    char *data = new char[data_size];
 
     // Create socket
-    int sock = socket(AF_INET, SOCK_STREAM, 0);
-    if (sock < 0) {
+    if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
         std::cerr << "Socket creation error" << std::endl;
+        delete[] buffer;
+        delete[] data;
         return -1;
     }
 
-    struct sockaddr_in serv_addr;
     serv_addr.sin_family = AF_INET;
     serv_addr.sin_port = htons(port);
+
+    // Convert IP address from text to binary form
     if (inet_pton(AF_INET, ip_address.c_str(), &serv_addr.sin_addr) <= 0) {
-        std::cerr << "Invalid address / Address not supported" << std::endl;
+        std::cerr << "Invalid address/ Address not supported" << std::endl;
+        delete[] buffer;
+        delete[] data;
         return -1;
     }
 
-    // Connect to server
+    // Connect to the server
     if (connect(sock, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0) {
         std::cerr << "Connection Failed" << std::endl;
+        delete[] buffer;
+        delete[] data;
         return -1;
     }
+
     std::cout << "Connected to server at " << ip_address << ":" << port << std::endl;
+    
+    // Main loop: 50 outer iterations, and inner loop based on iterations count.
+    for (int e = 0; e < 50; ++e) {
+        for (int i = 0; i < iterations; ++i) {
+            // Fill the data buffer with a repeating character
+            memset(data, 'A' + i % 26, data_size);
 
-    // Number of threads (and cores) we want to use
-    const int thread_count = 4;
+            // Receive data from the server
+            ssize_t bytes_received = read_all(sock, buffer, data_size, e, i);
+            if (bytes_received < 0) {
+                std::cerr << "Error in read_all" << std::endl;
+                break;
+            }
 
-    // Allocate a buffer of size 2560 bytes for each thread
-    char* data_buffer = new char[send_size * thread_count];
-    // Fill each thread's buffer with a distinct character for differentiation
-    for (int i = 0; i < thread_count; i++) {
-        memset(data_buffer + i * send_size, 'A' + i, send_size);
+            // Instead of sending the whole data at once, split it into 4 parts.
+            // Each part will be sent by a separate thread pinned to a specific CPU core.
+            int part_size = data_size / 4; // assume data_size is divisible by 4
+            std::vector<std::thread> threads;
+
+            for (int t = 0; t < 4; ++t) {
+                threads.push_back(std::thread([sock, data, part_size, e, t]() {
+                    // Set the thread affinity to a specific core (cores 1, 2, 3, 4)
+                    cpu_set_t cpuset;
+                    CPU_ZERO(&cpuset);
+                    CPU_SET(t + 1, &cpuset); // core index: t+1
+                    pthread_t current_thread = pthread_self();
+                    int rc = pthread_setaffinity_np(current_thread, sizeof(cpu_set_t), &cpuset);
+                    if (rc != 0) {
+                        std::cerr << "Error setting thread affinity for thread " << t + 1 << std::endl;
+                    }
+                    // Send this part of the data
+                    ssize_t sent = send_all(sock, data + t * part_size, part_size, e, t + 1);
+                    if (sent < 0) {
+                        std::cerr << "Error in send_all in thread " << t + 1 << std::endl;
+                    }
+                }));
+            }
+            // Wait for all four threads to finish sending
+            for (auto &th : threads) {
+                th.join();
+            }
+
+            printf("Completed iteration %d, inner loop %d\n", e, i);
+            printf("==============================================================\n");
+        }
     }
-
-    // Create threads. Each thread sends its own 2560-byte portion and binds to a specific core.
-    std::thread threads[thread_count];
-    for (int i = 0; i < thread_count; i++) {
-        // core indices: 1, 2, 3, 4 (change if needed for your system)
-        int core_index = i + 1;
-        threads[i] = std::thread(send_thread_func, sock, data_buffer + i * send_size, send_size, core_index, i + 1);
-    }
-
-    // Wait for all threads to finish
-    for (int i = 0; i < thread_count; i++) {
-        threads[i].join();
-    }
-
-    // Close socket and free memory
+    
+    // Close the socket and free memory
     close(sock);
-    delete[] data_buffer;
+    delete[] buffer;
+    delete[] data;
+
     return 0;
 }
