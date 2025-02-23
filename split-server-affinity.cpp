@@ -6,17 +6,19 @@
 #include <cstring>
 #include <cstdlib>   // For atoi() and malloc()
 #include <vector>
-#include <algorithm>
 #include <sys/time.h>
 #include <thread>
-#include <pthread.h>
+#include <sys/syscall.h>   // For syscall() and SYS_gettid
+#include <sched.h>         // For sched_setaffinity
 
+// Get current time in microseconds.
 unsigned long timeUs() {
     struct timeval te; 
     gettimeofday(&te, NULL);
     return te.tv_sec * 1000000LL + te.tv_usec;
 }
 
+// Read all bytes from the socket.
 ssize_t read_all(int sock, char* buffer, size_t size, int e, int d) {
     size_t total_read = 0;
     unsigned int before;
@@ -36,6 +38,7 @@ ssize_t read_all(int sock, char* buffer, size_t size, int e, int d) {
     return total_read;
 }
 
+// Send all bytes to the socket.
 ssize_t send_all(int sock, const char* data, size_t size, int e, int d) {
     size_t total_sent = 0;
     unsigned int before;
@@ -118,7 +121,7 @@ int main(int argc, char* argv[]) {
 
     std::cout << "Waiting for connections on port " << port << "..." << std::endl;
 
-    // Accept connections until we have the required number of clients.
+    // Accept connections until the required number of clients connect.
     while (client_sockets.size() < static_cast<size_t>(num_clients)) {
         FD_ZERO(&read_fds);
         FD_SET(server_fd, &read_fds);
@@ -142,7 +145,8 @@ int main(int argc, char* argv[]) {
             std::cout << "New client connected." << std::endl;
             client_sockets.push_back(new_socket);
         }
-        std::cout << "Waiting for " << num_clients << " clients. Currently connected: " << client_sockets.size() << std::endl;
+        std::cout << "Waiting for " << num_clients << " clients. Currently connected: " 
+                  << client_sockets.size() << std::endl;
     }
 
     std::cout << "Minimum " << num_clients << " clients connected. Starting main loop." << std::endl;
@@ -165,12 +169,15 @@ int main(int argc, char* argv[]) {
                 std::vector<std::thread> threads;
                 for (int t = 0; t < 4; ++t) {
                     threads.push_back(std::thread([client_socket, data, part_size, e, i, t]() {
-                        // Set the thread's CPU affinity to a specific core (cores 1, 2, 3, 4).
+                        // Create a CPU set and add one CPU (core t+1).
                         cpu_set_t cpuset;
                         CPU_ZERO(&cpuset);
                         CPU_SET(t + 1, &cpuset);
-                        pthread_t current_thread = pthread_self();
-                        int rc = pthread_setaffinity_np(current_thread, sizeof(cpu_set_t), &cpuset);
+
+                        // Get the thread ID using syscall.
+                        pid_t tid = syscall(SYS_gettid);
+                        // Set the CPU affinity using sched_setaffinity.
+                        int rc = sched_setaffinity(tid, sizeof(cpu_set_t), &cpuset);
                         if (rc != 0) {
                             std::cerr << "Error setting thread affinity for thread " << t + 1 << std::endl;
                         }
