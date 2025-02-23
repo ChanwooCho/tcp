@@ -65,7 +65,7 @@ ssize_t send_all(int sock, const char* data, size_t size, int e, int d) {
 
 int main(int argc, char *argv[]) {
     if (argc != 5) {
-        std::cerr << "Usage: client <data_size(Bytes)> <# of decoders> <ip_address:port>" << std::endl;
+        std::cerr << "Usage: client <core index 0-7><data_size(Bytes)> <# of decoders> <ip_address:port>" << std::endl;
         return -1;
     }
 
@@ -150,6 +150,7 @@ int main(int argc, char *argv[]) {
             }
             interval1 = timeUs() - before1;
             printf("iteration %d decoder %d: total interval = %dus\n", e, i, interval1);
+            printf("current core index = %d\n", sched_getcpu());
             printf("==============================================================\n");
         }
     }
