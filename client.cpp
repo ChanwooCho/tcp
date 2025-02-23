@@ -62,12 +62,12 @@ ssize_t send_all(int sock, const char* data, size_t size, int e, int d) {
 
 int main(int argc, char *argv[]) {
     if (argc != 4) {
-        std::cerr << "Usage: client <data_size(KB)> <# of decoders> <ip_address:port>" << std::endl;
+        std::cerr << "Usage: client <data_size(Bytes)> <# of decoders> <ip_address:port>" << std::endl;
         return -1;
     }
 
     // Parse data_size and iterations
-    int data_size = std::atoi(argv[1]) * 1024; // Bytes
+    int data_size = std::atoi(argv[1]); // Bytes
     int iterations = std::atoi(argv[2]) * 2; // attention layer + feedforward layer
 
     // Split the IP address and port
