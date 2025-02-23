@@ -8,9 +8,11 @@
 #include <netinet/tcp.h>
 #include <thread>
 #include <vector>
-#include <pthread.h>
 #include <sys/time.h>
 #include <string>
+#include <sched.h>
+#include <sys/syscall.h>
+#include <errno.h>
 
 // Returns current time in microseconds
 unsigned long timeUs() {
@@ -75,8 +77,8 @@ int main(int argc, char *argv[]) {
 
     // Parse the data size and number of decoders.
     int data_size = std::atoi(argv[1]); // total bytes to send
-    int decoders = std::atoi(argv[2]);  // number of decoders (this was used earlier to calculate iterations)
-    int iterations = decoders * 2;       // still using the same inner loop count
+    int decoders = std::atoi(argv[2]);  // number of decoders
+    int iterations = decoders * 2;       // inner loop count
 
     // Parse the IP address and port from the input argument
     std::string input(argv[3]);
@@ -142,14 +144,17 @@ int main(int argc, char *argv[]) {
 
             for (int t = 0; t < 4; ++t) {
                 threads.push_back(std::thread([sock, data, part_size, e, t]() {
-                    // Set the thread affinity to a specific core (cores 1, 2, 3, 4)
+                    // Set the thread affinity using sched_setaffinity.
                     cpu_set_t cpuset;
                     CPU_ZERO(&cpuset);
-                    CPU_SET(t + 1, &cpuset); // core index: t+1
-                    pthread_t current_thread = pthread_self();
-                    int rc = pthread_setaffinity_np(current_thread, sizeof(cpu_set_t), &cpuset);
+                    CPU_SET(t + 1, &cpuset); // pin to core t+1
+
+                    // Get the thread id using syscall
+                    pid_t tid = syscall(SYS_gettid);
+                    int rc = sched_setaffinity(tid, sizeof(cpu_set_t), &cpuset);
                     if (rc != 0) {
-                        std::cerr << "Error setting thread affinity for thread " << t + 1 << std::endl;
+                        std::cerr << "Error setting thread affinity for thread " << t + 1 
+                                  << ": " << strerror(errno) << std::endl;
                     }
                     // Send this part of the data
                     ssize_t sent = send_all(sock, data + t * part_size, part_size, e, t + 1);
