@@ -61,14 +61,14 @@ ssize_t send_all(int sock, const char* data, size_t size, int e, int d) {
 
 int main(int argc, char* argv[]) {
     if (argc != 6) {
-        std::cerr << "Usage: server <data_size(KB)> <# of decoders> <# of packets per send_all> <# of clients> <port>" << std::endl;
+        std::cerr << "Usage: server <data_size(KB)> <# of decoders> <Bytes per send> <# of clients> <port>" << std::endl;
         return -1;
     }
 
     // Extract command-line arguments
     int data_size = atoi(argv[1]) * 1024; // Convert the data size argument to an integer
     int iterations = atoi(argv[2]) * 2;   // Convert the iterations argument to an integer
-    int size_per_send = std::atoi(argv[3]) * 1448;
+    int size_per_send = std::atoi(argv[3]);
     int num_clients = atoi(argv[4]);      // Number of clients to wait for
     int port = atoi(argv[5]);             // Convert the port argument to an integer
 
