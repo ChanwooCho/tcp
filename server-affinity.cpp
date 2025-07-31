@@ -112,6 +112,16 @@ int main(int argc, char* argv[]) {
         return -1;
     }
 
+    // Disable Nagle Algorithm
+    int flag = 1;
+    if (setsockopt(server_fd, IPPROTO_TCP, TCP_NODELAY, &flag, sizeof(flag)) < 0) {
+    std::cerr << "setsockopt TCP_NODELAY failed: " << strerror(errno) << std::endl;
+    close(server_fd);
+    delete[] buffer;
+    delete[] data;
+    return -1;
+}
+
     address.sin_family = AF_INET;
     address.sin_addr.s_addr = INADDR_ANY; // Bind to any local IP address
     address.sin_port = htons(port);       // Use the port passed as an argument
