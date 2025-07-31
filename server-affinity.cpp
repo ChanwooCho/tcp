@@ -55,7 +55,7 @@ ssize_t send_all(int sock, const char* data, size_t size, int e, int d) {
 }
 
 int main(int argc, char* argv[]) {
-    if (argc != 5) {
+    if (argc != 6) {
         std::cerr << "Usage: server <core index> <data_size(Bytes)> <# of decoders> <# of clients> <port>" << std::endl;
         return -1;
     }
