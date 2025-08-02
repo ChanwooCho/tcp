@@ -118,7 +118,7 @@ int main(int argc, char* argv[]) {
                 unsigned long start = timeUs();
                 for (int it = 0; it < iterations; ++it) {
                     // 1) 모두 보내기 전 동기화
-                    sync_point.arrive_and_wait();
+                    // sync_point.arrive_and_wait();
                     send_all(sock, data.data(), data.size(), e, it);
                     read_all(sock, buf.data(), buf.size(), e, it);
                 }
