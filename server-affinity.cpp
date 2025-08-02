@@ -136,5 +136,4 @@ int main(int argc, char* argv[]) {
     std::cout << "Server shut down.\n";
     return 0;
 }
-이런식으로 코드를 짜면 한 대와 통신할 때와 두 대와 통신할 때랑 시간이 딱 2배가 차이가 나는데
-좀 더 동시에 통신하는 방식은 없을까
+
