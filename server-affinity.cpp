@@ -3,45 +3,45 @@
 #include <netinet/in.h>
 #include <netinet/tcp.h>
 #include <unistd.h>
-#include <cstring>
-#include <cstdlib>    // atoi()
+#include <sys/syscall.h> // syscall, SYS_gettid
+#include <sched.h>       // CPU_SET, sched_setaffinity
+#include <cstring>       // memset
+#include <cstdlib>       // atoi
 #include <vector>
 #include <thread>
-#include <barrier>    // C++20 barrier
-#include <sched.h>    // CPU_SET
-#include <pthread.h>  // pthread_setaffinity_np
-#include <sys/time.h> // gettimeofday
-#include <cstdio>     // printf, perror
+#include <barrier>       // C++20 barrier
+#include <sys/time.h>    // gettimeofday
+#include <cstdio>        // printf, perror
 
 // 마이크로초 단위 시간 구하기
 unsigned long timeUs() {
     struct timeval te;
-    gettimeofday(&te, NULL);
+    gettimeofday(&te, nullptr);
     return te.tv_sec * 1000000LL + te.tv_usec;
 }
 
-// 전체 읽기
-ssize_t read_all(int sock, char* buf, size_t sz, int e, int i) {
+// 지정한 크기만큼 모두 읽기
+ssize_t read_all(int sock, char* buf, size_t sz, int e, int it) {
     size_t total = 0;
     while (total < sz) {
         unsigned long t0 = timeUs();
         ssize_t n = read(sock, buf + total, sz - total);
         unsigned long dt = timeUs() - t0;
-        printf("[e%d it%d sock%d] read=%zd dt=%luus\n", e, i, sock, n, dt);
+        printf("[e%d it%d sock%d] read=%zd dt=%luus\n", e, it, sock, n, dt);
         if (n < 0) { perror("read"); return -1; }
         total += n;
     }
     return total;
 }
 
-// 전체 쓰기
-ssize_t send_all(int sock, const char* buf, size_t sz, int e, int i) {
+// 지정한 크기만큼 모두 쓰기
+ssize_t send_all(int sock, const char* buf, size_t sz, int e, int it) {
     size_t total = 0;
     while (total < sz) {
         unsigned long t0 = timeUs();
         ssize_t n = send(sock, buf + total, sz - total, 0);
         unsigned long dt = timeUs() - t0;
-        printf("[e%d it%d sock%d] send=%zd dt=%luus\n", e, i, sock, n, dt);
+        printf("[e%d it%d sock%d] send=%zd dt=%luus\n", e, it, sock, n, dt);
         if (n < 0) { perror("send"); return -1; }
         total += n;
     }
@@ -50,21 +50,22 @@ ssize_t send_all(int sock, const char* buf, size_t sz, int e, int i) {
 
 int main(int argc, char* argv[]) {
     if (argc != 7) {
-        std::cerr << "Usage: server <base core> <data size> <#decoders*2> <#clients> <port> <core offset>\n";
+        std::cerr << "Usage: server <base_core> <data_size> <#iters> <#clients> <port> <core_offset>\n";
         return -1;
     }
+
     int base_core   = std::atoi(argv[1]);
     int data_size   = std::atoi(argv[2]);
-    int iterations  = std::atoi(argv[3]); // 이미 *2 한 값
+    int iterations  = std::atoi(argv[3]); // 총 반복 횟수
     int num_clients = std::atoi(argv[4]);
     int port        = std::atoi(argv[5]);
     int core_off    = std::atoi(argv[6]);
 
-    // 서버 소켓 만들기
+    // 1) 서버 소켓 만들기
     int server_fd = socket(AF_INET, SOCK_STREAM, 0);
     if (server_fd < 0) { perror("socket"); return -1; }
+
     int opt = 1;
-    // SO_REUSEADDR, SO_REUSEPORT 분리 호출
     setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
     setsockopt(server_fd, SOL_SOCKET, SO_REUSEPORT, &opt, sizeof(opt));
     setsockopt(server_fd, IPPROTO_TCP, TCP_NODELAY, &opt, sizeof(opt));
@@ -78,53 +79,54 @@ int main(int argc, char* argv[]) {
 
     std::cout << "Waiting for " << num_clients << " clients on port " << port << "...\n";
 
-    // 클라이언트 연결 대기
+    // 2) 클라이언트 연결 받기
     std::vector<int> socks;
     while ((int)socks.size() < num_clients) {
-        int s = accept(server_fd, NULL, NULL);
+        int s = accept(server_fd, nullptr, nullptr);
         if (s < 0) { perror("accept"); continue; }
         std::cout << "Client connected: sock=" << s << "\n";
         socks.push_back(s);
     }
-    std::cout << "All clients connected. Launch threads...\n";
+    std::cout << "All clients connected. Launching threads...\n";
 
-    // 에폭/반복 동기화 장치
+    // 3) 에폭/반복 동기화 도구
     std::barrier sync_point(num_clients);
 
-    // 스레드 실행
+    // 4) 스레드 실행
     std::vector<std::thread> threads;
     for (int idx = 0; idx < num_clients; ++idx) {
         int sock = socks[idx];
         threads.emplace_back([=,&sync_point]() {
-            // 이 스레드를 특정 코어에 묶기
+            // --- affinity 설정: Android용 sched_setaffinity ---
+            pid_t tid = syscall(SYS_gettid);
             cpu_set_t cpuset;
             CPU_ZERO(&cpuset);
             int core = base_core + idx * core_off;
             CPU_SET(core, &cpuset);
-            if (pthread_setaffinity_np(pthread_self(), sizeof(cpuset), &cpuset) != 0) {
-                perror("set affinity");
+            if (sched_setaffinity(tid, sizeof(cpuset), &cpuset) != 0) {
+                perror("sched_setaffinity");
             } else {
-                printf("Thread sock%d bound to core %d\n", sock, core);
+                printf("Thread sock%d bound to core %d (tid %d)\n", sock, core, tid);
             }
 
             // 데이터 버퍼 준비
             std::vector<char> data(data_size), buf(data_size);
 
-            // 50 에폭마다 평균 계산
+            // 50 에폭 동안 반복
             for (int e = 0; e < 50; ++e) {
                 unsigned long sum = 0;
-                for (int i = 0; i < iterations; ++i) {
-                    // 보내기 전 대기
+                for (int it = 0; it < iterations; ++it) {
+                    // 1) 모두 보내기 전 동기화
                     sync_point.arrive_and_wait();
                     unsigned long t0 = timeUs();
-                    send_all(sock, data.data(), data.size(), e, i);
+                    send_all(sock, data.data(), data.size(), e, it);
 
-                    // 읽기 전 대기
+                    // 2) 모두 읽기 전 동기화
                     sync_point.arrive_and_wait();
-                    read_all(sock, buf.data(), buf.size(), e, i);
+                    read_all(sock, buf.data(), buf.size(), e, it);
                     unsigned long t1 = timeUs();
 
-                    // 다음 반복 전 대기
+                    // 3) 다음 반복 전 동기화
                     sync_point.arrive_and_wait();
                     sum += (t1 - t0);
                 }
@@ -136,9 +138,9 @@ int main(int argc, char* argv[]) {
         });
     }
 
-    // 모두 끝날 때까지 기다림
+    // 5) 모든 스레드 종료 대기
     for (auto &t : threads) t.join();
     close(server_fd);
-    std::cout << "Server exit\n";
+    std::cout << "Server shut down.\n";
     return 0;
 }
