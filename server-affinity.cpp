@@ -56,7 +56,7 @@ int main(int argc, char* argv[]) {
 
     int base_core   = std::atoi(argv[1]);
     int data_size   = std::atoi(argv[2]);
-    int iterations  = std::atoi(argv[3]); // 총 반복 횟수
+    int iterations  = std::atoi(argv[3]) * 2; // 총 반복 횟수
     int num_clients = std::atoi(argv[4]);
     int port        = std::atoi(argv[5]);
     int core_off    = std::atoi(argv[6]);
@@ -115,24 +115,16 @@ int main(int argc, char* argv[]) {
             // 50 에폭 동안 반복
             for (int e = 0; e < 50; ++e) {
                 unsigned long sum = 0;
+                unsigned long start = timeUs();
                 for (int it = 0; it < iterations; ++it) {
                     // 1) 모두 보내기 전 동기화
                     sync_point.arrive_and_wait();
-                    unsigned long t0 = timeUs();
                     send_all(sock, data.data(), data.size(), e, it);
-
-                    // 2) 모두 읽기 전 동기화
-                    sync_point.arrive_and_wait();
                     read_all(sock, buf.data(), buf.size(), e, it);
-                    unsigned long t1 = timeUs();
-
-                    // 3) 다음 반복 전 동기화
-                    sync_point.arrive_and_wait();
-                    sum += (t1 - t0);
                 }
-                unsigned long avg = sum / iterations;
+                unsigned long duration = timeUs() - start;
                 printf("[sock %d] epoch %d avg = %lu us (%.3f ms)\n",
-                       sock, e, avg, avg / 1000.0);
+                       sock, e, duration, duration / 1000.0);
             }
             close(sock);
         });
