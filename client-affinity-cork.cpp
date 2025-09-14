@@ -141,7 +141,13 @@ int main(int argc, char *argv[]) {
                 delete[] data;
                 return -1;
             }
+            
+            int flag = 1;
+            setsockopt(sock, IPPROTO_TCP, TCP_CORK, &flag, sizeof(flag));
             ssize_t bytes_sent = send_all(sock, buffer, data_size, e, i);
+            flag = 0;
+            setsockopt(sock, IPPROTO_TCP, TCP_CORK, &flag, sizeof(flag));
+            
             if (bytes_sent < 0) {
                 close(sock);
                 delete[] buffer;
