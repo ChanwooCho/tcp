@@ -117,9 +117,12 @@ int main(int argc, char* argv[]) {
                 unsigned long sum = 0;
                 unsigned long start = timeUs();
                 for (int it = 0; it < iterations; ++it) {
-                    // 1) 모두 보내기 전 동기화
-                    // sync_point.arrive_and_wait();
+                    int flag = 1;
+                    setsockopt(sock, IPPROTO_TCP, TCP_CORK, &flag, sizeof(flag));
                     send_all(sock, data.data(), data.size(), e, it);
+                    flag = 0;
+                    setsockopt(sock, IPPROTO_TCP, TCP_CORK, &flag, sizeof(flag));
+                    
                     read_all(sock, buf.data(), buf.size(), e, it);
                 }
                 unsigned long duration = timeUs() - start;
