@@ -53,11 +53,11 @@ int main(int argc, char *argv[]) {
         return -1;
     }
 
+    // Core Affinity
     int core_index = std::atoi(argv[1]);
-    // Set CPU affinity to core 1 (the second core)
     cpu_set_t cpuset;
     CPU_ZERO(&cpuset);
-    CPU_SET(core_index, &cpuset);  // use core 1
+    CPU_SET(core_index, &cpuset); 
     if (sched_setaffinity(0, sizeof(cpuset), &cpuset) == -1) {
         perror("sched_setaffinity");
         return -1;
