@@ -174,7 +174,7 @@ int main(int argc, char* argv[]) {
             interval = timeUs() - before;
             sum_interval += interval;
         }
-        printf("iteration %d' Time = %d ms\n\n", e, sum_interval / 1000);
+        printf("iteration %d' Time = %d ms\n\n", e, sum_interval / iterations / 1000);
     }
 
     // Clean up resources
