@@ -162,6 +162,7 @@ int main(int argc, char* argv[]) {
     
     // Main loop to handle reading and writing for all clients
     for (int e = 0; e < 50; ++e) { // Iterate multiple times as per the original logic
+        sum_interval = 0;
         for (int i = 0; i < iterations; ++i) {
             memset(data, 'A' + i % 26, data_size);
             before = timeUs();
@@ -174,7 +175,7 @@ int main(int argc, char* argv[]) {
             interval = timeUs() - before;
             sum_interval += interval;
         }
-        printf("iteration %d' Time = %d ms\n\n", e, sum_interval / iterations / 1000);
+        printf("iteration %d' Time = %d ms\n\n", e, sum_interval / 1000);
     }
 
     // Clean up resources
