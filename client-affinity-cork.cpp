@@ -16,7 +16,6 @@ unsigned long timeUs() {
     return te.tv_sec * 1000000LL + te.tv_usec;
 }
 
-unsigned int min_latency;
 ssize_t read_all(int sock, char* buffer, size_t size) {
     size_t total_read = 0;
     
