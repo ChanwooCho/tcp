@@ -3,139 +3,189 @@
 #include <netinet/in.h>
 #include <netinet/tcp.h>
 #include <unistd.h>
-#include <sys/syscall.h> // syscall, SYS_gettid
-#include <sched.h>       // CPU_SET, sched_setaffinity
-#include <cstring>       // memset
-#include <cstdlib>       // atoi
+#include <cstring>
+#include <cstdlib>  // For atoi() and malloc()
 #include <vector>
+#include <algorithm> // For std::max
+#include <sys/time.h>
 #include <thread>
-#include <barrier>       // C++20 barrier
-#include <sys/time.h>    // gettimeofday
-#include <cstdio>        // printf, perror
 
-// 마이크로초 단위 시간 구하기
 unsigned long timeUs() {
-    struct timeval te;
-    gettimeofday(&te, nullptr);
+    struct timeval te; 
+    gettimeofday(&te, NULL);
     return te.tv_sec * 1000000LL + te.tv_usec;
 }
 
-// 지정한 크기만큼 모두 읽기
-ssize_t read_all(int sock, char* buf, size_t sz, int e, int it) {
-    size_t total = 0;
-    while (total < sz) {
-        unsigned long t0 = timeUs();
-        ssize_t n = read(sock, buf + total, sz - total);
-        unsigned long dt = timeUs() - t0;
-        printf("[e%d it%d sock%d] read=%zd dt=%luus\n", e, it, sock, n, dt);
-        if (n < 0) { perror("read"); return -1; }
-        total += n;
+ssize_t read_all(int sock, char* buffer, size_t size) {
+    size_t total_read = 0;
+    
+    while (total_read < size) {
+        ssize_t bytes_read = read(sock, buffer + total_read, size - total_read);
+        if (bytes_read < 0) {
+            perror("Read error");
+            return -1;
+        } else if (bytes_read == 0) {
+            // Connection closed
+            break;
+        }
+        total_read += bytes_read;
     }
-    return total;
+    return total_read;
 }
 
-// 지정한 크기만큼 모두 쓰기
-ssize_t send_all(int sock, const char* buf, size_t sz, int e, int it) {
-    size_t total = 0;
-    while (total < sz) {
-        unsigned long t0 = timeUs();
-        ssize_t n = send(sock, buf + total, sz - total, 0);
-        unsigned long dt = timeUs() - t0;
-        printf("[e%d it%d sock%d] send=%zd dt=%luus\n", e, it, sock, n, dt);
-        if (n < 0) { perror("send"); return -1; }
-        total += n;
+ssize_t send_all(int sock, const char* data, size_t size, int c) {
+    const size_t CHUNK = c;
+    size_t total_send = 0; 
+    while (total_send < size) {
+        size_t n = size - total_send;
+        if (n > CHUNK) n = CHUNK;
+        int flags = (total_send + n < size) ? MSG_MORE : 0;
+        ssize_t s = send(sock, data + total_send, n, flags);
+        if (s < 0) return -1;
+        total_send += s;
     }
-    return total;
+    return total_send;
 }
 
 int main(int argc, char* argv[]) {
-    if (argc != 7) {
-        std::cerr << "Usage: server <base_core> <data_size> <#iters> <#clients> <port> <core_offset>\n";
+    if (argc != 5) {
+        std::cerr << "Usage: server <core index(0-7)> <data_size(Bytes)> <# of decoders> <chunck_size(Bytes)> <# of clients> <port>" << std::endl;
         return -1;
     }
 
-    int base_core   = std::atoi(argv[1]);
-    int data_size   = std::atoi(argv[2]);
-    int iterations  = std::atoi(argv[3]) * 2; // 총 반복 횟수
-    int num_clients = std::atoi(argv[4]);
-    int port        = std::atoi(argv[5]);
-    int core_off    = std::atoi(argv[6]);
+    // Core Affinity
+    int core_index = std::atoi(argv[1]);
+    cpu_set_t cpuset;
+    CPU_ZERO(&cpuset);
+    CPU_SET(core_index, &cpuset); 
+    if (sched_setaffinity(0, sizeof(cpuset), &cpuset) == -1) {
+        perror("sched_setaffinity");
+        return -1;
+    }
 
-    // 1) 서버 소켓 만들기
-    int server_fd = socket(AF_INET, SOCK_STREAM, 0);
-    if (server_fd < 0) { perror("socket"); return -1; }
+    // Extract command-line arguments
+    int data_size = atoi(argv[2]); 
+    int iterations = atoi(argv[3]) * 2;   
+    int chunck_size = std::atoi(argv[4]);
+    int num_clients = atoi(argv[5]);     
+    int port = atoi(argv[6]);            
 
+    int server_fd, new_socket;
+    struct sockaddr_in address;
     int opt = 1;
-    setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
-    setsockopt(server_fd, SOL_SOCKET, SO_REUSEPORT, &opt, sizeof(opt));
-    // setsockopt(server_fd, IPPROTO_TCP, TCP_NODELAY, &opt, sizeof(opt));
+    int addrlen = sizeof(address);
+    fd_set read_fds, write_fds;
+    std::vector<int> client_sockets;
 
-    sockaddr_in addr{};
-    addr.sin_family = AF_INET;
-    addr.sin_addr.s_addr = INADDR_ANY;
-    addr.sin_port = htons(port);
-    if (bind(server_fd, (sockaddr*)&addr, sizeof(addr)) < 0) { perror("bind"); return -1; }
-    if (listen(server_fd, 10) < 0) { perror("listen"); return -1; }
+    // Dynamically allocate buffer and data arrays based on the specified data size
+    char* buffer = new char[data_size];
+    char* data = new char[data_size];
 
-    std::cout << "Waiting for " << num_clients << " clients on port " << port << "...\n";
-
-    // 2) 클라이언트 연결 받기
-    std::vector<int> socks;
-    while ((int)socks.size() < num_clients) {
-        int s = accept(server_fd, nullptr, nullptr);
-        if (s < 0) { perror("accept"); continue; }
-        std::cout << "Client connected: sock=" << s << "\n";
-        socks.push_back(s);
-    }
-    std::cout << "All clients connected. Launching threads...\n";
-
-    // 3) 에폭/반복 동기화 도구
-    std::barrier sync_point(num_clients);
-
-    // 4) 스레드 실행
-    std::vector<std::thread> threads;
-    for (int idx = 0; idx < num_clients; ++idx) {
-        int sock = socks[idx];
-        threads.emplace_back([=,&sync_point]() {
-            // --- affinity 설정: Android용 sched_setaffinity ---
-            pid_t tid = syscall(SYS_gettid);
-            cpu_set_t cpuset;
-            CPU_ZERO(&cpuset);
-            int core = base_core + idx * core_off;
-            CPU_SET(core, &cpuset);
-            if (sched_setaffinity(tid, sizeof(cpuset), &cpuset) != 0) {
-                perror("sched_setaffinity");
-            } else {
-                printf("Thread sock%d bound to core %d (tid %d)\n", sock, core, tid);
-            }
-
-            // 데이터 버퍼 준비
-            std::vector<char> data(data_size), buf(data_size);
-
-            // 50 에폭 동안 반복
-            for (int e = 0; e < 50; ++e) {
-                unsigned long sum = 0;
-                unsigned long start = timeUs();
-                for (int it = 0; it < iterations; ++it) {
-                    int flag = 1;
-                    setsockopt(sock, IPPROTO_TCP, TCP_CORK, &flag, sizeof(flag));
-                    send_all(sock, data.data(), data.size(), e, it);
-                    flag = 0;
-                    setsockopt(sock, IPPROTO_TCP, TCP_CORK, &flag, sizeof(flag));
-                    
-                    read_all(sock, buf.data(), buf.size(), e, it);
-                }
-                unsigned long duration = timeUs() - start;
-                printf("[sock %d] epoch %d avg = %lu us (%.3f ms)\n",
-                       sock, e, duration, duration / 1000.0);
-            }
-            close(sock);
-        });
+    // Create socket file descriptor
+    if ((server_fd = socket(AF_INET, SOCK_STREAM, 0)) == 0) {
+        std::cerr << "Socket failed" << std::endl;
+        delete[] buffer;
+        delete[] data;
+        return -1;
     }
 
-    // 5) 모든 스레드 종료 대기
-    for (auto &t : threads) t.join();
+    // Attach socket to the port
+    if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt))) {
+        std::cerr << "setsockopt failed" << std::endl;
+        close(server_fd);
+        delete[] buffer;
+        delete[] data;
+        return -1;
+    }
+
+    address.sin_family = AF_INET;
+    address.sin_addr.s_addr = INADDR_ANY; // Bind to any local IP address
+    address.sin_port = htons(port);       // Use the port passed as an argument
+
+    // Bind the socket to the network address and port
+    if (bind(server_fd, (struct sockaddr*)&address, sizeof(address)) < 0) {
+        std::cerr << "Bind failed" << std::endl;
+        close(server_fd);
+        delete[] buffer;
+        delete[] data;
+        return -1;
+    }
+
+    // Listen for incoming connections
+    if (listen(server_fd, 10) < 0) {
+        std::cerr << "Listen failed" << std::endl;
+        close(server_fd);
+        delete[] buffer;
+        delete[] data;
+        return -1;
+    }
+
+    std::cout << "Waiting for connections on port " << port << "..." << std::endl;
+
+    // Wait for the specified number of clients to connect
+    while (client_sockets.size() < num_clients) {
+        FD_ZERO(&read_fds);
+        FD_SET(server_fd, &read_fds);
+        int max_sd = server_fd;
+
+        // Use select() to wait for a new client connection
+        int activity = select(max_sd + 1, &read_fds, NULL, NULL, NULL);
+
+        if (activity < 0 && errno != EINTR) {
+            std::cerr << "Select error" << std::endl;
+            break;
+        }
+
+        // Check if there’s a new connection request
+        if (FD_ISSET(server_fd, &read_fds)) {
+            if ((new_socket = accept(server_fd, (struct sockaddr*)&address, (socklen_t*)&addrlen)) < 0) {
+                std::cerr << "Accept failed" << std::endl;
+                close(server_fd);
+                delete[] buffer;
+                delete[] data;
+                return -1;
+            }
+
+            std::cout << "New client connected." << std::endl;
+            client_sockets.push_back(new_socket); // Add new socket to the list
+        }
+
+        std::cout << "Waiting for " << num_clients << " clients. Currently connected clients: " << client_sockets.size() << std::endl;
+    }
+
+    std::cout << "Minimum " << num_clients << " clients connected. Starting main loop." << std::endl;
+
+    unsigned int before;
+    unsigned int interval;
+    unsigned int sum_interval = 0;
+
+    
+    // Main loop to handle reading and writing for all clients
+    for (int e = 0; e < 50; ++e) { // Iterate multiple times as per the original logic
+        for (int i = 0; i < iterations; ++i) {
+            memset(data, 'A' + i % 26, data_size);
+            before = timeUs();
+            for (int client_socket : client_sockets) {
+                size_t bytes_send = send_all(client_socket, data, data_size, e, i);
+            }
+            for (int client_socket : client_sockets) {
+                size_t bytes_read = read_all(client_socket, buffer, data_size, e, i);
+            }
+            interval = timeUs() - before;
+            sum_interval += interval;
+        }
+        printf("iteration %d' Time = %d ms\n\n", e, sum_interval / 1000);
+    }
+
+    // Clean up resources
+    for (int client_socket : client_sockets) {
+        close(client_socket);
+    }
     close(server_fd);
-    std::cout << "Server shut down.\n";
+    delete[] buffer;
+    delete[] data;
+
+    std::cout << "Connection closed" << std::endl;
+
     return 0;
 }
