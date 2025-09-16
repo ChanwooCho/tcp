@@ -17,22 +17,11 @@ unsigned long timeUs() {
 }
 
 unsigned int min_latency;
-ssize_t read_all(int sock, char* buffer, size_t size, int e, int d) {
+ssize_t read_all(int sock, char* buffer, size_t size) {
     size_t total_read = 0;
-    unsigned int before;
-    unsigned int interval;
-    unsigned int is_first = 1;
     
     while (total_read < size) {
-        before = timeUs();
         ssize_t bytes_read = read(sock, buffer + total_read, size - total_read);
-        interval = timeUs() - before;
-        if (min_latency > interval && is_first) {
-            min_latency = interval;
-        }
-        is_first = 0;
-        printf("iteration %d decoder %d: bytes_read = %zd, interval = %dus\n", e, d, bytes_read, interval);
-
         if (bytes_read < 0) {
             perror("Read error");
             return -1;
@@ -45,27 +34,23 @@ ssize_t read_all(int sock, char* buffer, size_t size, int e, int d) {
     return total_read;
 }
 
-ssize_t send_all(int sock, const char* data, size_t size, int e, int d) {
-    size_t total_sent = 0;
-    unsigned int before;
-    unsigned int interval;
-    while (total_sent < size) {
-        before = timeUs();
-        ssize_t bytes_sent = send(sock, data + total_sent, size - total_sent, 0);
-        interval = timeUs() - before;
-        printf("iteration %d decoder %d: bytes_sent = %zd, interval = %dus\n", e, d, bytes_sent, interval);
-        if (bytes_sent < 0) {
-            perror("Send error");
-            return -1;
-        }
-        total_sent += bytes_sent;
+ssize_t send_all(int sock, const char* data, size_t size, int c) {
+    const size_t CHUNK = c;
+    size_t total_send = 0; 
+    while (total_send < size) {
+        size_t n = size - total_send;
+        if (n > CHUNK) n = CHUNK;
+        int flags = (total_send + n < size) ? MSG_MORE : 0;
+        ssize_t s = send(sock, data + total_send, n, flags);
+        if (s < 0) return -1;
+        total_send += s;
     }
-    return total_sent;
+    return total_send;
 }
 
 int main(int argc, char *argv[]) {
     if (argc != 5) {
-        std::cerr << "Usage: client <core index 0-7><data_size(Bytes)> <# of decoders> <ip_address:port>" << std::endl;
+        std::cerr << "Usage: client <core index(0-7)> <data_size(Bytes)> <# of decoders> <chunck_size(Bytes)> <ip_address:port>" << std::endl;
         return -1;
     }
 
@@ -79,13 +64,13 @@ int main(int argc, char *argv[]) {
         return -1;
     }
 
-    // Parse data size and iterations
-    
+    // Data Size & Iteration & Chunck Size
     int data_size = std::atoi(argv[2]); // size in bytes
-    int iterations = std::atoi(argv[3]) * 2;     // iterations count
+    int iterations = std::atoi(argv[3]) * 2;  // iterations count
+    int chunck_size = std::atoi(argv[4]);  // iterations count
 
     // Split the IP address and port
-    std::string input(argv[4]);
+    std::string input(argv[5]);
     std::size_t colon_pos = input.find(':');
     if (colon_pos == std::string::npos) {
         std::cerr << "Invalid argument format. Use: <ip_address:port>" << std::endl;
@@ -134,7 +119,7 @@ int main(int argc, char *argv[]) {
         for (int i = 0; i < iterations; ++i) {
             memset(data, 'A' + i % 26, data_size);
             before1 = timeUs();
-            ssize_t bytes_received = read_all(sock, buffer, data_size, e, i);
+            ssize_t bytes_received = read_all(sock, buffer, data_size);
             if (bytes_received < 0) {
                 close(sock);
                 delete[] buffer;
@@ -142,12 +127,7 @@ int main(int argc, char *argv[]) {
                 return -1;
             }
             
-            int flag = 1;
-            setsockopt(sock, IPPROTO_TCP, TCP_CORK, &flag, sizeof(flag));
-            ssize_t bytes_sent = send_all(sock, buffer, data_size, e, i);
-            flag = 0;
-            setsockopt(sock, IPPROTO_TCP, TCP_CORK, &flag, sizeof(flag));
-            
+            ssize_t bytes_sent = send_all(sock, buffer, data_size, chunck_size);
             if (bytes_sent < 0) {
                 close(sock);
                 delete[] buffer;
@@ -155,6 +135,7 @@ int main(int argc, char *argv[]) {
                 return -1;
             }
             interval1 = timeUs() - before1;
+            
             printf("iteration %d decoder %d: total interval = %dus\n", e, i, interval1);
             printf("current core index = %d\n", sched_getcpu());
             printf("==============================================================\n");
