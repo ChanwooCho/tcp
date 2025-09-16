@@ -166,10 +166,10 @@ int main(int argc, char* argv[]) {
             memset(data, 'A' + i % 26, data_size);
             before = timeUs();
             for (int client_socket : client_sockets) {
-                size_t bytes_send = send_all(client_socket, data, data_size);
+                size_t bytes_send = send_all(client_socket, data, data_size, chunck_size);
             }
             for (int client_socket : client_sockets) {
-                size_t bytes_read = read_all(client_socket, buffer, data_size, chunck_size);
+                size_t bytes_read = read_all(client_socket, buffer, data_size);
             }
             interval = timeUs() - before;
             sum_interval += interval;
