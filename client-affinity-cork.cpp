@@ -135,9 +135,9 @@ int main(int argc, char *argv[]) {
             }
             interval1 = timeUs() - before1;
             
-            printf("iteration %d decoder %d: total interval = %dus\n", e, i, interval1);
-            printf("current core index = %d\n", sched_getcpu());
-            printf("==============================================================\n");
+            // printf("iteration %d decoder %d: total interval = %dus\n", e, i, interval1);
+            // printf("current core index = %d\n", sched_getcpu());
+            // printf("==============================================================\n");
         }
     }
 
